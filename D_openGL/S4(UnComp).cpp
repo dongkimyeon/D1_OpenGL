@@ -242,28 +242,27 @@ void ZigzagFunction(int value)
 
 void SizeChangeFunction(int value)
 {
-	if (!isSize) return;
+    //좌우 상하 크기 변경 
 
-    if (isSize)
+    if (!isSize) return;
+
+    for (auto& rect : rects)
     {
+        if(rect.x2 - rect.x1 >= 0.5f) value = -1;
+		else if (rect.x2 - rect.x1 <= 0.1f) value = 1;
+        float diff = (value == 1) ? 0.010f : -0.010f; // value에 따라 증가/감소
+        float centerX = (rect.x1 + rect.x2) / 2.0f;
+        float centerY = (rect.y1 + rect.y2) / 2.0f;
+        float halfWidth = std::max(0.01f, ((rect.x2 - rect.x1) / 2.0f) + diff);
+        float halfHeight = std::max(0.01f, ((rect.y2 - rect.y1) / 2.0f) + diff);
+        rect.x1 = centerX - halfWidth;
+        rect.x2 = centerX + halfWidth;
+        rect.y1 = centerY - halfHeight;
+        rect.y2 = centerY + halfHeight;
+    }
 
-        //수정필요    
-        glutPostRedisplay();
-        for (auto& rect : rects)
-        {
-            float scaleFactor = 0.8f + (coord_dist(mt) % 5) * 0.1f; // 0.8 ~ 1.2
-            float centerX = (rect.x1 + rect.x2) / 2.0f;
-            float centerY = (rect.y1 + rect.y2) / 2.0f;
-            float halfWidth = (rect.x2 - rect.x1) / 2.0f * scaleFactor;
-            float halfHeight = (rect.y2 - rect.y1) / 2.0f * scaleFactor;
-            rect.x1 = centerX - halfWidth;
-            rect.x2 = centerX + halfWidth;
-            rect.y1 = centerY - halfHeight;
-            rect.y2 = centerY + halfHeight;
-        }
-        
-	}
-	glutTimerFunc(100, SizeChangeFunction, 1);
+    glutPostRedisplay();
+    glutTimerFunc(100, SizeChangeFunction, value);
 }
 
 void ColorChangeFunction(int value)

@@ -30,7 +30,7 @@
     <ClCompile Include="S3(UnComp).cpp">
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
-    <ClCompile Include="S4(UnComp).cpp">
+    <ClCompile Include="S4%28UnComp%29.cpp">
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
     <ClCompile Include="S5.cpp">

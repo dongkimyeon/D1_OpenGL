@@ -14,6 +14,7 @@ void Mouse(int button, int state, int x, int y);
 void DrawRects();
 void Keyboard(unsigned char key, int x, int y);
 void Motion(int x, int y);
+void TimerFunc(int value);
 
 struct Rect 
 {
@@ -54,6 +55,7 @@ int main(int argc, char** argv) {
     glutMouseFunc(Mouse);
     glutMotionFunc(Motion);
     glutKeyboardFunc(Keyboard);
+	glutTimerFunc(100, TimerFunc, 1);
     glutMainLoop();
     return 0;
 }
@@ -118,7 +120,8 @@ void Mouse(int button, int state, int x, int y) {
                 }
             }
         }
-        else if (state == GLUT_UP) {
+        else if (state == GLUT_UP) 
+        {
             isDragging = false;
             selectedRectIndex = -1;
         }
@@ -126,8 +129,12 @@ void Mouse(int button, int state, int x, int y) {
     glutPostRedisplay();
 }
 
-void Motion(int x, int y) {
-    if (isDragging && selectedRectIndex != -1) {
+void Motion(int x, int y) 
+{
+    //충돌체크 후 해당 사각형 크기 변경 및 색상 변경
+    if (isDragging && selectedRectIndex != -1) 
+    {
+       
         float ndc_x = (2.0f * x / 1000.0f) - 1.0f;
         float ndc_y = 1.0f - (2.0f * y / 1000.0f); 
 
@@ -143,4 +150,17 @@ void Motion(int x, int y) {
 
         glutPostRedisplay();
     }
+}
+
+void TimerFunc(int value)
+{
+    //충돌체크
+    for (auto it = rects.begin(); it != rects.end();)
+    {
+        //움직이는 사각형과 배경 사각형과 충돌체크해서 사이즈변경
+
+    }
+
+
+	glutTimerFunc(100, TimerFunc, 1);
 }
