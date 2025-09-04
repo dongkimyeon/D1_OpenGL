@@ -12,6 +12,7 @@ std::random_device rd;
 std::mt19937 mt(rd());
 std::uniform_int_distribution<int> color_dist(0, 255);
 std::uniform_int_distribution<int> coord_dist(0, 800);
+std::uniform_int_distribution<int> size_dist(0,1);
 
 GLvoid drawScene(GLvoid);
 GLvoid Reshape(int w, int h);
@@ -157,6 +158,7 @@ void Mouse(int button, int state, int x, int y) {
     float ndc_x = (2.0f * x / WINDOW_WIDTH) - 1.0f;
     float ndc_y = 1.0f - (2.0f * y / WINDOW_HEIGHT);
 
+   
     //좌클릭 누름 
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) 
     {
@@ -242,23 +244,31 @@ void ZigzagFunction(int value)
 
 void SizeChangeFunction(int value)
 {
-    //좌우 상하 크기 변경 
-
+    //좌우 상하 크기 변경
     if (!isSize) return;
 
     for (auto& rect : rects)
     {
+        int sizeChangeType = size_dist(mt);
         if(rect.x2 - rect.x1 >= 0.5f) value = -1;
 		else if (rect.x2 - rect.x1 <= 0.1f) value = 1;
-        float diff = (value == 1) ? 0.010f : -0.010f; // value에 따라 증가/감소
+        float diff = (value == 1) ? 0.010f : -0.010f; 
         float centerX = (rect.x1 + rect.x2) / 2.0f;
         float centerY = (rect.y1 + rect.y2) / 2.0f;
         float halfWidth = std::max(0.01f, ((rect.x2 - rect.x1) / 2.0f) + diff);
         float halfHeight = std::max(0.01f, ((rect.y2 - rect.y1) / 2.0f) + diff);
-        rect.x1 = centerX - halfWidth;
-        rect.x2 = centerX + halfWidth;
-        rect.y1 = centerY - halfHeight;
-        rect.y2 = centerY + halfHeight;
+        //rect.x1 = centerX - halfWidth;
+        if(sizeChangeType == 0) //좌우
+        {
+            rect.x1 = centerX - halfWidth;
+            rect.x2 = centerX + halfWidth;
+        }
+        else //상하
+        {
+            rect.y1 = centerY - halfHeight;
+            rect.y2 = centerY + halfHeight;
+		}
+      
     }
 
     glutPostRedisplay();
