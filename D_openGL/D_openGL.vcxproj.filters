@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="소스 파일">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="헤더 파일">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="리소스 파일">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="소스 파일\Practice">
+      <UniqueIdentifier>{133d17b7-9437-476d-9360-90bf034ca9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\WarmmingUp">
+      <UniqueIdentifier>{2ddcd580-2ae6-4d9d-91a7-fe32d8f75e03}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="S1.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S2.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S3(UnComp).cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S4(UnComp).cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S5.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S6.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S7.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="W1.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+    <ClCompile Include="W2.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+    <ClCompile Include="W3.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+    <ClCompile Include="W4.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+    <ClCompile Include="W5.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+    <ClCompile Include="W6.cpp">
+      <Filter>소스 파일\WarmmingUp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CommonInclude.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
