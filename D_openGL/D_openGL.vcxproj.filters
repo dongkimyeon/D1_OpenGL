@@ -60,6 +60,9 @@
     <ClCompile Include="W6.cpp">
       <Filter>소스 파일\WarmmingUp</Filter>
     </ClCompile>
+    <ClCompile Include="heliTest.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">

@@ -3,6 +3,7 @@
 using namespace std;
 
 #define ANSI_COLOR_RED "\033[31m"
+
 #define ANSI_COLOR_YELLOW "\033[33m"
 #define ANSI_COLOR_RESET "\033[0m"
 
@@ -31,7 +32,7 @@ struct BoardTile {
 };
 
 BoardTile gameBoard[5][5];
-int remainingMoves = 60;
+int remainingMoves = 3;
 
 void initializeBoard();
 
@@ -53,6 +54,10 @@ int main() {
         }
 
         cout << "Score: " << remainingTiles << "  Coin: " << remainingMoves << "¹ø\n";
+        if(remainingMoves == 0) {
+            cout << "¤µ¤¡ ¤»¤»" << endl;
+            break;
+		}
         cout << "  a b c d e\n";
         if (isHintEnabled) {
             for (int row = 0; row < 5; row++) {

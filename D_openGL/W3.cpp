@@ -86,6 +86,23 @@ int main() {
             }
 
             CopyArray(pointArray, sortedArray, 10);
+            if (isSortedView)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    for (int j = i + 1; j < 10; j++)
+                    {
+                        if (sortedArray[i].isEmpty || sortedArray[j].isEmpty)
+                            continue;
+                        if (sortedArray[i].calculateDistance() > sortedArray[j].calculateDistance())
+                        {
+                            Vector3D temp = sortedArray[i];
+                            sortedArray[i] = sortedArray[j];
+                            sortedArray[j] = temp;
+                        }
+                    }
+                }
+            }
         }
         else if (userCommand == '-') {
             if (rearIndex == frontIndex) {
@@ -97,6 +114,23 @@ int main() {
             frontIndex++;
             pointCount--;
             CopyArray(pointArray, sortedArray, 10);
+            if (isSortedView)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    for (int j = i + 1; j < 10; j++)
+                    {
+                        if (sortedArray[i].isEmpty || sortedArray[j].isEmpty)
+                            continue;
+                        if (sortedArray[i].calculateDistance() > sortedArray[j].calculateDistance())
+                        {
+                            Vector3D temp = sortedArray[i];
+                            sortedArray[i] = sortedArray[j];
+                            sortedArray[j] = temp;
+                        }
+                    }
+                }
+            }
         }
         else if (userCommand == 'e') 
         {
@@ -114,6 +148,23 @@ int main() {
             rearIndex++;
             pointCount++;
             CopyArray(pointArray, sortedArray, 10);
+            if (isSortedView)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    for (int j = i + 1; j < 10; j++)
+                    {
+                        if (sortedArray[i].isEmpty || sortedArray[j].isEmpty)
+                            continue;
+                        if (sortedArray[i].calculateDistance() > sortedArray[j].calculateDistance())
+                        {
+                            Vector3D temp = sortedArray[i];
+                            sortedArray[i] = sortedArray[j];
+                            sortedArray[j] = temp;
+                        }
+                    }
+                }
+            }
         }
         else if (userCommand == 'd') {
             if (rearIndex == frontIndex) {
@@ -125,6 +176,23 @@ int main() {
             rearIndex--;
             pointCount--;
             CopyArray(pointArray, sortedArray, 10);
+            if (isSortedView)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    for (int j = i + 1; j < 10; j++)
+                    {
+                        if (sortedArray[i].isEmpty || sortedArray[j].isEmpty)
+                            continue;
+                        if (sortedArray[i].calculateDistance() > sortedArray[j].calculateDistance())
+                        {
+                            Vector3D temp = sortedArray[i];
+                            sortedArray[i] = sortedArray[j];
+                            sortedArray[j] = temp;
+                        }
+                    }
+                }
+            }
         }
         else if (userCommand == 'c') {
             for (int i = 0; i < 10; i++) {
@@ -134,33 +202,47 @@ int main() {
             rearIndex = 0;
             pointCount = 0;
             CopyArray(pointArray, sortedArray, 10);
+            if (isSortedView)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    for (int j = i + 1; j < 10; j++)
+                    {
+                        if (sortedArray[i].isEmpty || sortedArray[j].isEmpty)
+                            continue;
+                        if (sortedArray[i].calculateDistance() > sortedArray[j].calculateDistance())
+                        {
+                            Vector3D temp = sortedArray[i];
+                            sortedArray[i] = sortedArray[j];
+                            sortedArray[j] = temp;
+                        }
+                    }
+                }
+            }
         }
         else if (userCommand == 'a') {
             cout << "Count: " << pointCount << endl;
         }
         else if (userCommand == 'b') 
         {
-            pointArray[10] = pointArray[0];
-
-
-            for (int i = 1; i < 11; i++) {
-                pointArray[i - 1] = pointArray[i];
+            
+            if (pointCount == 0) {
+                cout << "List empty" << endl;
+                continue;
             }
-
-            for (int i = 0; i < 10; i++) {
-                if (pointArray[i].isEmpty) {
-                    frontIndex = i;
-                    break;
-                }
+            // Save the element at index 0
+            Vector3D temp = pointArray[0];
+            // Shift elements left (1->0, 2->1, ..., 9->8)
+            for (int i = 0; i < 9; i++) {
+                pointArray[i] = pointArray[i + 1];
             }
+            // Place element from index 0 at index 9
+            pointArray[9] = temp;
+            // Adjust head and tail to follow the rotation
+            frontIndex = (frontIndex == 0) ? 9 : frontIndex - 1;
+            rearIndex = (rearIndex == 0) ? 9 : rearIndex - 1;
 
-            for (int i = 9; i >= 0; i--) {
-                if (!pointArray[i].isEmpty) {
-                    rearIndex = i + 1;
-                    break;
-                }
-            }
-            CopyArray(pointArray, sortedArray, 10);
+            //CopyArray(pointArray, sortedArray, 10);
         }
         else if (userCommand == 'f') 
         {
