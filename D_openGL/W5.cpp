@@ -82,6 +82,112 @@ void DrawCollisionAreaColorChange(char** board, Rect* rect1, Rect* rect2) {
 	}
 }
 
+
+void InitTempRect(Rect* tempRect) {
+	tempRect->x1 = 0;
+	tempRect->x2 = 0;
+	tempRect->y1 = 0;
+	tempRect->y2 = 0;
+}
+
+void HandleWraparound(Rect* selectedRect, Rect* tempRect, bool* tempRectActive, int boardSize, char direction) {
+	int diff;
+
+	switch (direction) {
+	case 'x': // x축 우측 이동
+		if (selectedRect->x2 > boardSize) {
+			diff = selectedRect->x2 - boardSize;
+			if (selectedRect->x1 >= boardSize) {
+				*tempRectActive = false;
+				selectedRect->x1 -= boardSize;
+				selectedRect->x2 -= boardSize;
+				InitTempRect(tempRect);
+			}
+			else {
+				*tempRectActive = true;
+				tempRect->x1 = 0;
+				tempRect->x2 = diff;
+				tempRect->y1 = selectedRect->y1;
+				tempRect->y2 = selectedRect->y2;
+			}
+		}
+		else {
+			*tempRectActive = false;
+			InitTempRect(tempRect);
+		}
+		break;
+
+	case 'X': // x축 좌측 이동
+		if (selectedRect->x1 < 0) {
+			diff = -selectedRect->x1;
+			if (selectedRect->x2 <= 0) {
+				*tempRectActive = false;
+				selectedRect->x1 += boardSize;
+				selectedRect->x2 += boardSize;
+				InitTempRect(tempRect);
+			}
+			else {
+				*tempRectActive = true;
+				tempRect->x1 = boardSize - diff;
+				tempRect->x2 = boardSize;
+				tempRect->y1 = selectedRect->y1;
+				tempRect->y2 = selectedRect->y2;
+			}
+		}
+		else {
+			*tempRectActive = false;
+			InitTempRect(tempRect);
+		}
+		break;
+
+	case 'y': // y축 아래쪽 이동
+		if (selectedRect->y2 > boardSize) {
+			diff = selectedRect->y2 - boardSize;
+			if (selectedRect->y1 >= boardSize) {
+				*tempRectActive = false;
+				selectedRect->y1 -= boardSize;
+				selectedRect->y2 -= boardSize;
+				InitTempRect(tempRect);
+			}
+			else {
+				*tempRectActive = true;
+				tempRect->y1 = 0;
+				tempRect->y2 = diff;
+				tempRect->x1 = selectedRect->x1;
+				tempRect->x2 = selectedRect->x2;
+			}
+		}
+		else {
+			*tempRectActive = false;
+			InitTempRect(tempRect);
+		}
+		break;
+
+	case 'Y': // y축 위쪽 이동
+		if (selectedRect->y1 < 0) {
+			diff = -selectedRect->y1;
+			if (selectedRect->y2 <= 0) {
+				*tempRectActive = false;
+				selectedRect->y1 += boardSize;
+				selectedRect->y2 += boardSize;
+				InitTempRect(tempRect);
+			}
+			else {
+				*tempRectActive = true;
+				tempRect->y1 = boardSize - diff;
+				tempRect->y2 = boardSize;
+				tempRect->x1 = selectedRect->x1;
+				tempRect->x2 = selectedRect->x2;
+			}
+		}
+		else {
+			*tempRectActive = false;
+			InitTempRect(tempRect);
+		}
+		break;
+	}
+}
+
 int main() {
 	Rect userRect1, userRect2;
 	char command;
@@ -109,12 +215,18 @@ int main() {
 		DrawRect(board, &userRect2, 'X'); // 두 번째 사각형은 'X'로 표시
 		DrawTempRect(board, &tempRect1, tempRectActive1, 'O');
 		DrawTempRect(board, &tempRect2, tempRectActive2, 'X');
+		// 충돌처리 
 		DrawCollisionAreaColorChange(board, &userRect1, &userRect2);
+		DrawCollisionAreaColorChange(board, &tempRect1, &tempRect2);
+		DrawCollisionAreaColorChange(board, &userRect1, &tempRect2);
+		DrawCollisionAreaColorChange(board, &tempRect1, &userRect2);
+
 		DrawBoard(board);
 
 		cout << "명령어를 입력하세요 (1/2로 사각형 선택 후 x/X, y/Y, s/S, i/I, j/J, a/A, m, r, c, d, q): ";
 		cin >> command;
 		cin.ignore();
+
 
 		Rect* selectedRect = nullptr;
 		Rect* tempRect = nullptr;
@@ -146,105 +258,56 @@ int main() {
 			cin >> command;
 			cin.ignore();
 		}
+		else if(command == 'r') 
+		{
+			// 첫 번째 사각형 좌표 입력
+			cout << "첫 번째 사각형의 좌상단 좌표 (x1 y1)와 우하단 좌표 (x2 y2)를 입력하세요: ";
+			cin >> userRect1.x1 >> userRect1.y1 >> userRect1.x2 >> userRect1.y2;
+			manjuk1 = (userRect1.x2 - userRect1.x1) * (userRect1.y2 - userRect1.y1);
+
+			// 두 번째 사각형 좌표 입력
+			cout << "두 번째 사각형의 좌상단 좌표 (x1 y1)와 우하단 좌표 (x2 y2)를 입력하세요: ";
+			cin >> userRect2.x1 >> userRect2.y1 >> userRect2.x2 >> userRect2.y2;
+			manjuk2 = (userRect2.x2 - userRect2.x1) * (userRect2.y2 - userRect2.y1);
+			cin.ignore();
+
+			InitBoard(board);
+			InitTempRect(&tempRect1);
+			InitTempRect(&tempRect2);
+			tempRectActive1 = false;
+			tempRectActive2 = false;
+
+		}
 		else {
 			cout << "사각형을 먼저 선택하세요 (1 또는 2).\n";
 			continue;
 		}
+
 
 		switch (command) {
 		case 'x':
 			cout << rectNum << "번 사각형: x축 우측으로 한 칸 이동합니다.\n";
 			selectedRect->x1++;
 			selectedRect->x2++;
-			if (selectedRect->x2 > BOARD_SIZE)
-			{
-				int diff = selectedRect->x2 - BOARD_SIZE;
-				if (selectedRect->x1 >= BOARD_SIZE) {
-					*tempRectActive = false;
-					selectedRect->x1 -= BOARD_SIZE;
-					selectedRect->x2 -= BOARD_SIZE;
-				}
-				else {
-					*tempRectActive = true;
-					tempRect->x1 = 0;
-					tempRect->x2 = diff;
-					tempRect->y1 = selectedRect->y1;
-					tempRect->y2 = selectedRect->y2;
-				}
-			}
-			else {
-				*tempRectActive = false;
-			}
+			HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'x');
 			break;
 		case 'X':
 			cout << rectNum << "번 사각형: x축 좌측으로 한 칸 이동합니다.\n";
 			selectedRect->x1--;
 			selectedRect->x2--;
-			if (selectedRect->x1 < 0) {
-				int diff = -selectedRect->x1;
-				if (selectedRect->x2 <= 0) {
-					*tempRectActive = false;
-					selectedRect->x1 += BOARD_SIZE;
-					selectedRect->x2 += BOARD_SIZE;
-				}
-				else {
-					*tempRectActive = true;
-					tempRect->x1 = BOARD_SIZE - diff;
-					tempRect->x2 = BOARD_SIZE;
-					tempRect->y1 = selectedRect->y1;
-					tempRect->y2 = selectedRect->y2;
-				}
-			}
-			else {
-				*tempRectActive = false;
-			}
+			HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'X');
 			break;
 		case 'y':
 			cout << rectNum << "번 사각형: y축 아래쪽으로 한 칸 이동합니다.\n";
 			selectedRect->y1++;
 			selectedRect->y2++;
-			if (selectedRect->y2 > BOARD_SIZE) {
-				int diff = selectedRect->y2 - BOARD_SIZE;
-				if (selectedRect->y1 >= BOARD_SIZE) {
-					*tempRectActive = false;
-					selectedRect->y1 -= BOARD_SIZE;
-					selectedRect->y2 -= BOARD_SIZE;
-				}
-				else {
-					*tempRectActive = true;
-					tempRect->y1 = 0;
-					tempRect->y2 = diff;
-					tempRect->x1 = selectedRect->x1;
-					tempRect->x2 = selectedRect->x2;
-				}
-			}
-			else {
-				*tempRectActive = false;
-			}
+			HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'y');
 			break;
 		case 'Y':
 			cout << rectNum << "번 사각형: y축 위쪽으로 한 칸 이동합니다.\n";
 			selectedRect->y1--;
 			selectedRect->y2--;
-			if (selectedRect->y1 < 0) 
-			{
-				int diff = -selectedRect->y1;
-				if (selectedRect->y2 <= 0) {
-					*tempRectActive = false;
-					selectedRect->y1 += BOARD_SIZE;
-					selectedRect->y2 += BOARD_SIZE;
-				}
-				else {
-					*tempRectActive = true;
-					tempRect->y1 = BOARD_SIZE - diff;
-					tempRect->y2 = BOARD_SIZE;
-					tempRect->x1 = selectedRect->x1;
-					tempRect->x2 = selectedRect->x2;
-				}
-			}
-			else {
-				*tempRectActive = false;
-			}
+			HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'Y');
 			break;
 		case 's':
 			cout << rectNum << "번 사각형: x와 y 모두 한 칸 축소합니다.\n";
@@ -302,157 +365,26 @@ int main() {
 			*manjuk = (selectedRect->x2 - selectedRect->x1) * (selectedRect->y2 - selectedRect->y1);
 			cout << rectNum << "번 사각형의 면적: " << *manjuk << endl;
 			break;
-		case 'r':
-			cout << rectNum << "번 사각형을 리셋하고 새 좌표를 입력받습니다.\n";
-			cout << rectNum << "번 사각형의 좌상단 좌표 (x1 y1)와 우하단 좌표 (x2 y2)를 입력하세요: ";
-			*tempRectActive = false;
-			cin >> selectedRect->x1 >> selectedRect->y1 >> selectedRect->x2 >> selectedRect->y2;
-			*manjuk = (selectedRect->x2 - selectedRect->x1) * (selectedRect->y2 - selectedRect->y1);
-			cin.ignore();
-			break;
 		case 'c':
 			//보드칸 늘리기
 			if (BOARD_SIZE >= 40) break;
 
 			BOARD_SIZE++;
+			if (tempRect->x1 == 0)
 			{
-				if (selectedRect->x2 > BOARD_SIZE)
-				{
-					int diff = selectedRect->x2 - BOARD_SIZE;
-					if (selectedRect->x1 >= BOARD_SIZE) {
-						*tempRectActive = false;
-						selectedRect->x1 -= BOARD_SIZE;
-						selectedRect->x2 -= BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->x1 = 0;
-						tempRect->x2 = diff;
-						tempRect->y1 = selectedRect->y1;
-						tempRect->y2 = selectedRect->y2;
-					}
-				}
-
-
-				if (selectedRect->x1 < 0) {
-					int diff = -selectedRect->x1;
-					if (selectedRect->x2 <= 0) {
-						*tempRectActive = false;
-						selectedRect->x1 += BOARD_SIZE;
-						selectedRect->x2 += BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->x1 = BOARD_SIZE - diff;
-						tempRect->x2 = BOARD_SIZE;
-						tempRect->y1 = selectedRect->y1;
-						tempRect->y2 = selectedRect->y2;
-					}
-				}
-
-				if (selectedRect->y2 > BOARD_SIZE) {
-					int diff = selectedRect->y2 - BOARD_SIZE;
-					if (selectedRect->y1 >= BOARD_SIZE) {
-						*tempRectActive = false;
-						selectedRect->y1 -= BOARD_SIZE;
-						selectedRect->y2 -= BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->y1 = 0;
-						tempRect->y2 = diff;
-						tempRect->x1 = selectedRect->x1;
-						tempRect->x2 = selectedRect->x2;
-					}
-				}
-
-				if (selectedRect->y1 < 0) {
-					int diff = -selectedRect->y1;
-					if (selectedRect->y2 <= 0) {
-						*tempRectActive = false;
-						selectedRect->y1 += BOARD_SIZE;
-						selectedRect->y2 += BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->y1 = BOARD_SIZE - diff;
-						tempRect->y2 = BOARD_SIZE;
-						tempRect->x1 = selectedRect->x1;
-						tempRect->x2 = selectedRect->x2;
-					}
-				}
+				HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'x');
 			}
+			if (tempRect->y1 == 0)
+			{
+				HandleWraparound(selectedRect, tempRect, tempRectActive, BOARD_SIZE, 'y');
+			}
+			
 			break;
 		case 'd':
 			//보드칸 줄이기
-			if (BOARD_SIZE <= 10) break;
+			if (BOARD_SIZE <= 10 || BOARD_SIZE <= userRect1.x2 || BOARD_SIZE <= userRect1.y2 ) break;
 			BOARD_SIZE--;
-			{
-				if (selectedRect->x2 > BOARD_SIZE)
-				{
-					int diff = selectedRect->x2 - BOARD_SIZE;
-					if (selectedRect->x1 >= BOARD_SIZE) {
-						*tempRectActive = false;
-						selectedRect->x1 -= BOARD_SIZE;
-						selectedRect->x2 -= BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->x1 = 0;
-						tempRect->x2 = diff;
-						tempRect->y1 = selectedRect->y1;
-						tempRect->y2 = selectedRect->y2;
-					}
-				}
-
-				if (selectedRect->x1 < 0) {
-					int diff = -selectedRect->x1;
-					if (selectedRect->x2 <= 0) {
-						*tempRectActive = false;
-						selectedRect->x1 += BOARD_SIZE;
-						selectedRect->x2 += BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->x1 = BOARD_SIZE - diff;
-						tempRect->x2 = BOARD_SIZE;
-						tempRect->y1 = selectedRect->y1;
-						tempRect->y2 = selectedRect->y2;
-					}
-				}
-
-				if (selectedRect->y2 > BOARD_SIZE) {
-					int diff = selectedRect->y2 - BOARD_SIZE;
-					if (selectedRect->y1 >= BOARD_SIZE) {
-						*tempRectActive = false;
-						selectedRect->y1 -= BOARD_SIZE;
-						selectedRect->y2 -= BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->y1 = 0;
-						tempRect->y2 = diff;
-						tempRect->x1 = selectedRect->x1;
-						tempRect->x2 = selectedRect->x2;
-					}
-				}
-
-				if (selectedRect->y1 < 0) {
-					int diff = -selectedRect->y1;
-					if (selectedRect->y2 <= 0) {
-						*tempRectActive = false;
-						selectedRect->y1 += BOARD_SIZE;
-						selectedRect->y2 += BOARD_SIZE;
-					}
-					else {
-						*tempRectActive = true;
-						tempRect->y1 = BOARD_SIZE - diff;
-						tempRect->y2 = BOARD_SIZE;
-						tempRect->x1 = selectedRect->x1;
-						tempRect->x2 = selectedRect->x2;
-					}
-				}
-			}
+			
 			break;
 		case 'q':
 			cout << "프로그램을 종료합니다.\n";
@@ -465,12 +397,6 @@ int main() {
 			cout << "유효하지 않은 명령어입니다. 다시 입력하세요.\n";
 			break;
 		}
-
-		if (selectedRect->x2 <= BOARD_SIZE)
-			*tempRectActive = false;
-
-		
-
 	}
 
 	return 0;
