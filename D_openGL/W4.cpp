@@ -2,179 +2,217 @@
 
 using namespace std;
 
+#define ANSI_COLOR_RED "\033[31m"
+#define ANSI_COLOR_YELLOW "\033[33m"
+#define ANSI_COLOR_RESET "\033[0m"
 
-struct board {
-	char val;
-	bool condition = false;
-};
-
-board _board[5][5];
-
-void initialize();
-
-int main()
-{
-	char x1 = 0;
-	bool toggleHint = false;
-
-	initialize();
-
-
-	while (true)
-	{
-		cout << "================\n";
-		cout << "  a b c d e\n";
-		if (toggleHint)
-		{
-			for (int i = 0; i < 5; i++)
-			{
-				cout << i + 1 << " ";
-				for (int j = 0; j < 5; j++)
-				{
-					cout << _board[i][j].val << " ";
-				}
-				cout << endl;
-			}
-		}
-		else
-		{
-			for (int i = 0; i < 5; i++)
-			{
-				cout << i + 1 << " ";
-				for (int j = 0; j < 5; j++)
-				{
-					if (!_board[i][j].condition)
-						cout << _board[i][j].val << " ";
-					else
-						cout << "* ";
-				}
-				cout << endl;
-			}
-		}
-		cout << "================\n";
-
-		cout << "Command : ";
-		cin >> x1;
-
-		if (x1 == 'q')
-			break;
-		else if (x1 == 'r')
-		{
-			initialize();
-		}
-		else if (x1 == 'h')
-		{
-			toggleHint = !toggleHint;
-		}
-		else {
-			char x2 = ' ';
-			int  y1 = 0, y2 = 0;
-
-			cin >> y1 >> x2 >> y2;
-
-			if (x1 < 'a' || x1 > 'e' || x2 < 'a' || x2 > 'e' || y1 < 1 || y1 > 5 || y2 < 1 || y2 > 5)
-			{
-				cout << "Out of range!" << endl;
-				Sleep(800);
-				system("cls");
-				continue;
-			}
-
-			if (_board[y1 - 1][x1 - 'a'].condition == true && _board[y2 - 1][x2 - 'a'].condition == true)
-
-			{
-
-				if ((_board[y1 - 1][x1 - 'a'].val == _board[y2 - 1][x2 - 'a'].val && (x1 != x2 || y1 != y2))
-					|| ((_board[y1 - 1][x1 - 'a'].val == '@') || (_board[y2 - 1][x2 - 'a'].val == '@')))
-				{
-					_board[y1 - 1][x1 - 'a'].condition = false;
-					if (_board[y1 - 1][x1 - 'a'].val != '@')
-						_board[y1 - 1][x1 - 'a'].val -= 32;
-					_board[y2 - 1][x2 - 'a'].condition = false;
-					if (_board[y2 - 1][x2 - 'a'].val != '@')
-						_board[y2 - 1][x2 - 'a'].val -= 32;
-				}
-				else
-				{
-					system("cls");
-					cout << "================\n";
-					cout << "  a b c d e\n";
-					for (int i = 0; i < 5; i++)
-					{
-						cout << i + 1 << " ";
-						for (int j = 0; j < 5; j++)
-						{
-							if (!_board[i][j].condition)
-								cout << _board[i][j].val << " ";
-							else if ((i == y1 - 1 && j == x1 - 'a') || (i == y2 - 1 && j == x2 - 'a'))
-								cout << _board[i][j].val << " ";
-							else
-								cout << "* ";
-						}
-						cout << endl;
-					}
-					cout << "================\n";
-					cout << "Not Matched!" << endl;
-					Sleep(800);
-					system("cls");
-				}
-			}
-		}
-	}
+void setConsoleColor(bool isRed) {
+#ifdef _WIN32
+    HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (isRed) {
+        SetConsoleTextAttribute(consoleHandle, FOREGROUND_RED | FOREGROUND_INTENSITY);
+    }
+    else {
+        SetConsoleTextAttribute(consoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    }
+#else
+    if (isRed) {
+        cout << ANSI_COLOR_RED;
+    }
+    else {
+        cout << ANSI_COLOR_RESET;
+    }
+#endif
 }
 
-void initialize()
-{
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			_board[i][j].condition = false;
-		}
-	}
+struct BoardTile {
+    char value;
+    bool isHidden = false;
+};
 
+BoardTile gameBoard[5][5];
+int remainingMoves = 60;
 
-	for (int i = 0; i < 12; i++)
-	{
-		while (true)
-		{
-			int x = rand() % 5;
-			int y = rand() % 5;
+void initializeBoard();
 
-			if (_board[y][x].condition == false)
-			{
-				_board[y][x].val = 'a' + i;;
-				_board[y][x].condition = true;
-				break;
-			}
-		}
-	}
+int main() {
+    char firstCol = 0;
+    bool isHintEnabled = false;
 
-	for (int i = 0; i < 12; i++)
-	{
-		while (true)
-		{
-			int x = rand() % 5;
-			int y = rand() % 5;
+    initializeBoard();
 
-			if (_board[y][x].condition == false)
-			{
-				_board[y][x].val = 'a' + i;;
-				_board[y][x].condition = true;
-				break;
-			}
-		}
-	}
+    while (true) {
+        cout << "天天天天天天天天天天天\n";
+        int remainingTiles = 0;
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 5; col++) {
+                if (!gameBoard[row][col].isHidden) {
+                    remainingTiles++;
+                }
+            }
+        }
 
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			if (!_board[i][j].condition)
-			{
-				_board[i][j].val = '@';
-				_board[i][j].condition = true;
-			}
-		}
-	}
+        cout << "Score: " << remainingTiles << "  Coin: " << remainingMoves << "廓\n";
+        cout << "  a b c d e\n";
+        if (isHintEnabled) {
+            for (int row = 0; row < 5; row++) {
+                cout << row + 1 << " ";
+                for (int col = 0; col < 5; col++) {
+                    if (!gameBoard[row][col].isHidden) {
+                        cout << ANSI_COLOR_RED << gameBoard[row][col].value << ANSI_COLOR_RESET << " ";
+                    }
+                    else {
+                        cout << gameBoard[row][col].value << " ";
+                    }
+                }
+                cout << endl;
+            }
+        }
+        else {
+            for (int row = 0; row < 5; row++) {
+                cout << row + 1 << " ";
+                for (int col = 0; col < 5; col++) {
+                    if (!gameBoard[row][col].isHidden) {
+                        cout << ANSI_COLOR_RED << gameBoard[row][col].value << ANSI_COLOR_RESET << " ";
+                    }
+                    else {
+                        cout << "* ";
+                    }
+                }
+                cout << endl;
+            }
+        }
+        cout << "天天天天天天天天天天天\n";
+
+        cout << "暀硉 : ";
+        cin >> firstCol;
+
+        if (firstCol == 'q') {
+            break;
+        }
+        else if (firstCol == 'r') {
+            initializeBoard();
+        }
+        else if (firstCol == 'h') {
+            isHintEnabled = !isHintEnabled;
+        }
+        else {
+            char secondCol = ' ';
+            int firstRow = 0, secondRow = 0;
+
+            cin >> firstRow >> secondCol >> secondRow;
+            remainingMoves--;
+
+            if (firstCol < 'a' || firstCol > 'e' || secondCol < 'a' || secondCol > 'e' ||
+                firstRow < 1 || firstRow > 5 || secondRow < 1 || secondRow > 5) {
+                cout << "Out of range!" << endl;
+                Sleep(800);
+                system("cls");
+                continue;
+            }
+
+            if (gameBoard[firstRow - 1][firstCol - 'a'].isHidden &&
+                gameBoard[secondRow - 1][secondCol - 'a'].isHidden) {
+                if ((gameBoard[firstRow - 1][firstCol - 'a'].value == gameBoard[secondRow - 1][secondCol - 'a'].value &&
+                    (firstCol != secondCol || firstRow != secondRow)) ||
+                    (gameBoard[firstRow - 1][firstCol - 'a'].value == '@' ||
+                        gameBoard[secondRow - 1][secondCol - 'a'].value == '@')) {
+                    gameBoard[firstRow - 1][firstCol - 'a'].isHidden = false;
+                    if (gameBoard[firstRow - 1][firstCol - 'a'].value != '@') {
+                        gameBoard[firstRow - 1][firstCol - 'a'].value = toupper(gameBoard[firstRow - 1][firstCol - 'a'].value);
+                    }
+
+                    gameBoard[secondRow - 1][secondCol - 'a'].isHidden = false;
+                    if (gameBoard[secondRow - 1][secondCol - 'a'].value != '@') {
+                        gameBoard[secondRow - 1][secondCol - 'a'].value = toupper(gameBoard[secondRow - 1][secondCol - 'a'].value);
+                    }
+
+                    if (gameBoard[firstRow - 1][firstCol - 'a'].value == '@' ||
+                        gameBoard[secondRow - 1][secondCol - 'a'].value == '@') {
+                        char targetChar = (gameBoard[firstRow - 1][firstCol - 'a'].value == '@') ?
+                            gameBoard[secondRow - 1][secondCol - 'a'].value :
+                            gameBoard[firstRow - 1][firstCol - 'a'].value;
+
+                        for (int row = 0; row < 5; row++) {
+                            for (int col = 0; col < 5; col++) {
+                                if (gameBoard[row][col].isHidden &&
+                                    tolower(gameBoard[row][col].value) == tolower(targetChar)) {
+                                    gameBoard[row][col].value = toupper(gameBoard[row][col].value);
+                                    gameBoard[row][col].isHidden = false;
+                                }
+                            }
+                        }
+                    }
+                    system("cls");
+                }
+                else {
+                    system("cls");
+                    cout << "天天天天天天天天天天天\n";
+                    cout << "  a b c d e\n";
+                    for (int row = 0; row < 5; row++) {
+                        cout << row + 1 << " ";
+                        for (int col = 0; col < 5; col++) {
+                            if (!gameBoard[row][col].isHidden ||
+                                (row == firstRow - 1 && col == firstCol - 'a') ||
+                                (row == secondRow - 1 && col == secondCol - 'a')) {
+                                cout << ANSI_COLOR_YELLOW << gameBoard[row][col].value << ANSI_COLOR_RESET << " ";
+                            }
+                            else {
+                                cout << "* ";
+                            }
+                        }
+                        cout << endl;
+                    }
+                    cout << "天天天天天天天天天天天\n";
+                    cout << "ぎ溜雖煬~~!!!" << endl;
+                    Sleep(800);
+                    system("cls");
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+void initializeBoard() {
+    for (int row = 0; row < 5; row++) {
+        for (int col = 0; col < 5; col++) {
+            gameBoard[row][col].isHidden = false;
+        }
+    }
+
+    for (int i = 0; i < 12; i++) {
+        while (true) {
+            int col = rand() % 5;
+            int row = rand() % 5;
+
+            if (!gameBoard[row][col].isHidden) {
+                gameBoard[row][col].value = 'a' + i;
+                gameBoard[row][col].isHidden = true;
+                break;
+            }
+        }
+    }
+
+    for (int i = 0; i < 12; i++) {
+        while (true) {
+            int col = rand() % 5;
+            int row = rand() % 5;
+
+            if (!gameBoard[row][col].isHidden) {
+                gameBoard[row][col].value = 'a' + i;
+                gameBoard[row][col].isHidden = true;
+                break;
+            }
+        }
+    }
+
+    for (int row = 0; row < 5; row++) {
+        for (int col = 0; col < 5; col++) {
+            if (!gameBoard[row][col].isHidden) {
+                gameBoard[row][col].value = '@';
+                gameBoard[row][col].isHidden = true;
+            }
+        }
+    }
 }
