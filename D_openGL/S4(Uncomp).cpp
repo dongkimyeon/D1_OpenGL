@@ -92,7 +92,7 @@ void Keyboard(unsigned char key, int x, int y)
 {
     switch (key)
     {
-    case 'd':
+    case '1':
     {
         //위치 변화1  사각형들은 각각 대각선으로 이동하고 벽에 닿으면 튕겨 다른 방향으로 이동한다/멈춘다
 		isDiagonal = !isDiagonal;
@@ -100,7 +100,7 @@ void Keyboard(unsigned char key, int x, int y)
 		glutTimerFunc(100, DiagonalFunction, 1);
         break;
     }
-    case 'z':
+    case '2':
     {
         //위치 변화2  사각형들이 지그재그로 이동한다/멈춘다.
 		isZigzag = !isZigzag;
@@ -108,20 +108,28 @@ void Keyboard(unsigned char key, int x, int y)
 		glutTimerFunc(100, ZigzagFunction, 1);
         break;  
     }
-    case 'c':
+    case '3':
     {
+
         //c: 크기 변화  사각형의 크기가 다양하게 변한다/변하지 않는다.
         isSize = !isSize;
-		glutTimerFunc(100, SizeChangeFunction, 1);
+        glutTimerFunc(100, SizeChangeFunction, 1);
         break;  
     }
-    case 'o':
+    case '4':
     {
+        
         //o: 색상 변화  사각형의 색상이 다양하게 변한다/변하지 않는다.
 		isColor = !isColor;
 		glutTimerFunc(100, ColorChangeFunction, 1);
 		break;
     }
+    case '5':
+    {
+        /*애니메이션 따라하기 : 애니메이션으로 진행되던 사각형들 중 랜덤하게 정한 임의 번째 사각형의 애니메이션을 그려진 순서대로 따라한다 / 멈춘다.
+        즉, 2번째 사각형이 선택되면, 2번째 사각형 뒤를 1 -> 3 -> 4 -> 5->… 따라서 애니메이션한다.*/
+        break;
+	}
     case 's':
     {
         //s: 모든 애니메이션이 멈춘다.

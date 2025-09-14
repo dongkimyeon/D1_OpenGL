@@ -19,6 +19,7 @@ bool b_TimerState = false;
 void Mouse(int button, int state, int x, int y);
 void Motion(int x, int y);
 void Keyboard(unsigned char key, int x, int y);
+
 void TimerFunction(int value);
 int main(int argc, char** argv) {
     // GLUT √ ±‚»≠

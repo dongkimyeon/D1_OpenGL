@@ -19,22 +19,22 @@ void DrawRects();
 
 struct Rect {
     float x1, y1, x2, y2;
-    float r, g, b;       
+    float r, g, b;
+    float orig_x1, orig_y1, orig_x2, orig_y2; // 원래 크기 저장
 };
 
 Rect rects[4];      
 GLclampf bgColor[3] = { 0.0f, 0.0f, 0.0f };
 
 void InitRects() {
-   
     // 0: 좌측 하단 (-1,-1) ~ (0,0), 빨강
-    rects[0] = { -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f };
+    rects[0] = { -1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, -1.0f, 0.0f, 0.0f };
     // 1: 좌측 상단 (-1,0) ~ (0,1), 초록
-    rects[1] = { -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
+    rects[1] = { -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f };
     // 2: 우측 하단 (0,-1) ~ (1,0), 파랑
-    rects[2] = { 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+    rects[2] = { 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f };
     // 3: 우측 상단 (0,0) ~ (1,1), 노랑
-    rects[3] = { 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f };
+    rects[3] = { 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f };
 }
 
 int main(int argc, char** argv) {
@@ -82,16 +82,39 @@ void DrawRects() {
 }
 
 void AdjustRectSize(int index, float scaleFactor) {
-   
+    if (rects[index].x2 - rects[index].x1 <= 0.1f && scaleFactor < 1.0f)
+        return; // 너무 작아지면 축소 중지
+
     float centerX = (rects[index].x1 + rects[index].x2) / 2.0f;
     float centerY = (rects[index].y1 + rects[index].y2) / 2.0f;
     float halfWidth = (rects[index].x2 - rects[index].x1) / 2.0f * scaleFactor;
     float halfHeight = (rects[index].y2 - rects[index].y1) / 2.0f * scaleFactor;
 
-    rects[index].x1 = centerX - halfWidth;
-    rects[index].x2 = centerX + halfWidth;
-    rects[index].y1 = centerY - halfHeight;
-    rects[index].y2 = centerY + halfHeight;
+    float new_x1 = centerX - halfWidth;
+    float new_x2 = centerX + halfWidth;
+    float new_y1 = centerY - halfHeight;
+    float new_y2 = centerY + halfHeight;
+
+    // 원래 크기보다 커지면 원래 크기로 제한
+    float origWidth = rects[index].orig_x2 - rects[index].orig_x1;
+    float origHeight = rects[index].orig_y2 - rects[index].orig_y1;
+    float newWidth = new_x2 - new_x1;
+    float newHeight = new_y2 - new_y1;
+
+    if (scaleFactor > 1.0f) {
+        if (newWidth > origWidth || newHeight > origHeight) {
+            rects[index].x1 = rects[index].orig_x1;
+            rects[index].x2 = rects[index].orig_x2;
+            rects[index].y1 = rects[index].orig_y1;
+            rects[index].y2 = rects[index].orig_y2;
+            return;
+        }
+    }
+
+    rects[index].x1 = new_x1;
+    rects[index].x2 = new_x2;
+    rects[index].y1 = new_y1;
+    rects[index].y2 = new_y2;
 }
 
 void Mouse(int button, int state, int x, int y) {

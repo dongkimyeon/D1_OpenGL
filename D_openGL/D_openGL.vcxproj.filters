@@ -27,10 +27,7 @@
     <ClCompile Include="S2.cpp">
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
-    <ClCompile Include="S3(UnComp).cpp">
-      <Filter>소스 파일\Practice</Filter>
-    </ClCompile>
-    <ClCompile Include="S4%28UnComp%29.cpp">
+    <ClCompile Include="S3.cpp">
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
     <ClCompile Include="S5.cpp">
@@ -62,6 +59,9 @@
     </ClCompile>
     <ClCompile Include="heliTest.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="S4.cpp">
+      <Filter>소스 파일\Practice</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
