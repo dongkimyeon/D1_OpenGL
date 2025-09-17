@@ -95,7 +95,7 @@ GLvoid Reshape(int w, int h) {
 
 void DrawRects() {
 
-    if (isLButtonDown )
+    if (isLButtonDown)
     {
         glColor3f(rects[0].r, rects[0].g, rects[0].b);
         glRectf(rects[0].x1, rects[0].y1, rects[0].x2, rects[0].y2);
