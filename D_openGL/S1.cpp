@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(drawScene);
     glutReshapeFunc(Reshape);
     glutKeyboardFunc(Keyboard);
-    //glutMouseFunc(Mouse);
+    glutMouseFunc(Mouse);
     //glutPassiveMotionFunc(Motion);
    
     glutMainLoop();

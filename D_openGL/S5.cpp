@@ -26,6 +26,7 @@ GLclampf bgColor[3] = { 0.5f, 0.5f, 0.5f };
 bool isDragging = false;
 bool isLButtonDown = false;
 
+float tempsize = 0.1;
 void InitRects() {
 
 	std::cout << "InitRects\n" << std::endl;
@@ -39,7 +40,7 @@ void InitRects() {
         Rect tempRect;
         float x = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
         float y = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
-        float size = 0.1f;
+        float size = 0.05f;
         tempRect.x1 = x - size;
         tempRect.x2 = x + size;
         tempRect.y1 = y - size;
@@ -122,7 +123,7 @@ void Keyboard(unsigned char key, int x, int y) {
             Rect tempRect;
             float x = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
             float y = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
-            float size = 0.1f;
+            float size = 0.05f;
             tempRect.x1 = x - size;
             tempRect.x2 = x + size;
             tempRect.y1 = y - size;
@@ -150,7 +151,7 @@ void Mouse(int button, int state, int x, int y) {
         if (state == GLUT_DOWN) {
 			isLButtonDown = true;
             
-            float size = 0.1f;
+			float size = tempsize / 2.0f;
             rects[0].x1 = ndc_x - size;
 			rects[0].x2 = ndc_x + size;
 			rects[0].y1 = ndc_y - size;
@@ -164,12 +165,33 @@ void Mouse(int button, int state, int x, int y) {
 			isLButtonDown = false;
             isDragging = false;
 
+			tempsize = rects[0].x2 - rects[0].x1;
 			rects[0].r = 0.0f;
 			rects[0].g = 0.0f;
 			rects[0].b = 0.0f;
 
             
         }
+    }
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+    {
+        Rect tempRect;
+        float size = 0.05f;
+        tempRect.x1 = ndc_x - size;
+        tempRect.x2 = ndc_x + size;
+        tempRect.y1 = ndc_y - size;
+        tempRect.y2 = ndc_y + size;
+        tempRect.r = color_dist(mt) / 255.0f;
+        tempRect.g = color_dist(mt) / 255.0f;
+        tempRect.b = color_dist(mt) / 255.0f;
+        rects.push_back(tempRect);
+
+        if (tempsize >= 0.1f)
+        {
+            tempsize -= 0.05f;
+        }
+			
+		
     }
     glutPostRedisplay();
 }

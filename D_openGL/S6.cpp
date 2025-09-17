@@ -48,7 +48,7 @@ GLclampf bgColor[3] = { 0.5f, 0.5f, 0.5f };
 void InitRects() {
 
     std::cout << "InitRects\n" << std::endl;
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         Rect rect;
         rect.size = 0.2f;
