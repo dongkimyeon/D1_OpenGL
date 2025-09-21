@@ -1,4 +1,5 @@
 #pragma once
+#define _CRT_SECURE_NO_WARNINGS
 #include <gl/glew.h>
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
@@ -23,4 +24,5 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include "FileRead.h"
 

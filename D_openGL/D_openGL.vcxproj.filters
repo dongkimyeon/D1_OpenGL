@@ -63,10 +63,20 @@
     <ClCompile Include="S4.cpp">
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
+    <ClCompile Include="S8.cpp">
+      <Filter>소스 파일\Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="FileRead.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vertex.glsl" />
+    <None Include="fragment.glsl" />
   </ItemGroup>
 </Project>
