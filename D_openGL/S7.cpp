@@ -346,7 +346,7 @@ void AutoMatching(int value) {
         }
 
         if (bestMatchIndex != -1) {
-            // 부드러운 이동을 위해 보간(lerp) 사용
+          
             const float SPEED = 0.05f; // 이동 속도 조절 (0.0f ~ 1.0f)
             float targetX1 = boardRects[bestMatchIndex].x1;
             float targetY1 = boardRects[bestMatchIndex].y1;
@@ -359,19 +359,19 @@ void AutoMatching(int value) {
             UserRects[i].x2 += (targetX2 - UserRects[i].x2) * SPEED;
             UserRects[i].y2 += (targetY2 - UserRects[i].y2) * SPEED;
 
-            // 목표 위치에 거의 도달했는지 확인
+           
             if (std::abs(UserRects[i].x1 - targetX1) < EPSILON &&
                 std::abs(UserRects[i].y1 - targetY1) < EPSILON &&
                 std::abs(UserRects[i].x2 - targetX2) < EPSILON &&
                 std::abs(UserRects[i].y2 - targetY2) < EPSILON) {
-                // 정확한 위치로 스냅
+            
                 UserRects[i].x1 = targetX1;
                 UserRects[i].y1 = targetY1;
                 UserRects[i].x2 = targetX2;
                 UserRects[i].y2 = targetY2;
                 UserRects[i].ismatched = true;
                
-                // 매칭된 사각형 색상 변경
+               
                 UserRects[i].r = 1.0f;
                 UserRects[i].g = 1.0f;
                 UserRects[i].b = 1.0f;
