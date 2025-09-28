@@ -19,6 +19,9 @@
     <Filter Include="소스 파일\WarmmingUp">
       <UniqueIdentifier>{2ddcd580-2ae6-4d9d-91a7-fe32d8f75e03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Shader_Practice">
+      <UniqueIdentifier>{342ef87d-5d65-4b4a-a6f6-b159df8d3d7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="S1.cpp">
@@ -64,7 +67,13 @@
       <Filter>소스 파일\Practice</Filter>
     </ClCompile>
     <ClCompile Include="S8.cpp">
-      <Filter>소스 파일\Practice</Filter>
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S9.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S10.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
