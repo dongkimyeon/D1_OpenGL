@@ -7,7 +7,7 @@ std::random_device rd;
 std::mt19937 mt(rd());
 std::uniform_int_distribution<int> color_dist(0, 255);
 std::uniform_int_distribution<int> coord_dist(0, 800);
-
+std::uniform_int_distribution<int> rect_dist(20, 40);
 GLvoid drawScene(GLvoid);
 GLvoid Reshape(int w, int h);
 void Mouse(int button, int state, int x, int y);
@@ -27,6 +27,9 @@ bool isDragging = false;
 bool isLButtonDown = false;
 
 float tempsize = 0.1;
+
+int rectNum = rect_dist(mt);
+
 void InitRects() {
 
 	std::cout << "InitRects\n" << std::endl;
@@ -35,7 +38,7 @@ void InitRects() {
     rects.push_back(temp);
         
     //사각형 20개
-    for (int i = 0; i < 20; ++i)
+    for (int i = 0; i < rectNum; ++i)
     {
         Rect tempRect;
         float x = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
@@ -110,15 +113,18 @@ void DrawRects() {
 
 void Keyboard(unsigned char key, int x, int y) {
     switch (key) {
-   
     case 'r':
     {
-		//reset 
-        for(auto it = rects.begin() + 1; it != rects.end(); )
+        //reset 
+        rectNum = rect_dist(mt);
+        for (auto it = rects.begin() + 1; it != rects.end(); )
         {
-            it = rects.erase(it); 
-		}
-        for (int i = 0; i < 20; ++i)
+            it = rects.erase(it);
+        }
+        // Reset eraser to original size
+        rects[0] = { -0.1f, -0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 0.0f };
+        tempsize = 0.1f;
+        for (int i = 0; i < rectNum; ++i)
         {
             Rect tempRect;
             float x = (coord_dist(mt) / 800.0f) * 2.0f - 1.0f;
@@ -132,10 +138,9 @@ void Keyboard(unsigned char key, int x, int y) {
             tempRect.g = color_dist(mt) / 255.0f;
             tempRect.b = color_dist(mt) / 255.0f;
             rects.push_back(tempRect);
-
         }
         glutPostRedisplay();
-		break;
+        break;
     }
     default:
         break;
@@ -162,10 +167,11 @@ void Mouse(int button, int state, int x, int y) {
         }
         else if (state == GLUT_UP) 
         {
+            rects[0] = { -0.1f, -0.1f, 0.1f, 0.1f, 0.0f, 0.0f, 0.0f };
 			isLButtonDown = false;
             isDragging = false;
 
-			tempsize = rects[0].x2 - rects[0].x1;
+			//tempsize = rects[0].x2 - rects[0].x1;
 			rects[0].r = 0.0f;
 			rects[0].g = 0.0f;
 			rects[0].b = 0.0f;
@@ -173,7 +179,7 @@ void Mouse(int button, int state, int x, int y) {
             
         }
     }
-    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN && rects.size() <= rectNum)
     {
         Rect tempRect;
         float size = 0.05f;

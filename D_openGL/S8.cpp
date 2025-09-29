@@ -161,6 +161,7 @@ void DrawScene() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    //렌더러가 그릴 객체를 선택할 수 있게 셰이더 프로그램에 따라 
     glUseProgram(shaderProgramID);
     glBindVertexArray(VAO);
 
@@ -196,9 +197,9 @@ void DrawScene() {
             glUniform1i(isBorderLoc, 0); // 내부 색상 사용
             glDrawElements(GL_TRIANGLES, shape.indices.size(), GL_UNSIGNED_INT, 0);
             // 테두리 그리기
-            glLineWidth(3.0f);
+            glLineWidth(2.0f);
             glUniform1i(isBorderLoc, 1); // 테두리 색상 사용
-            glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0); // 4개의 정점으로 테두리
+            glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);
             break;
         }
     }
@@ -263,10 +264,10 @@ void Mouse(int button, int state, int x, int y) {
             break;
         case RECTANGLE:
             newShape.vertices = {
-                ndc_x, ndc_y, r, g, b, border_r, border_g, border_b,                    // 좌하 (0)
-                ndc_x + size, ndc_y, r, g, b, border_r, border_g, border_b,             // 우하 (1)
-                ndc_x + size, ndc_y + size, r, g, b, border_r, border_g, border_b,      // 우상 (2)
-                ndc_x, ndc_y + size, r, g, b, border_r, border_g, border_b              // 좌상 (3)
+                ndc_x, ndc_y, r, g, b, border_r, border_g, border_b,                    // 좌하 
+                ndc_x + size, ndc_y, r, g, b, border_r, border_g, border_b,             // 우하 
+                ndc_x + size, ndc_y + size, r, g, b, border_r, border_g, border_b,      // 우상 
+                ndc_x, ndc_y + size, r, g, b, border_r, border_g, border_b              // 좌상 
             };
             newShape.indices = { 0, 1, 3, 1, 2, 3 }; // 두 삼각형: (0,1,3), (1,2,3)
             newShape.vertexCount = 4;

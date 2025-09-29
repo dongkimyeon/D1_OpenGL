@@ -243,26 +243,62 @@ void Mouse(int button, int state, int x, int y)
             x2, y2, r, g, b,
             x3, y3, r, g, b
         };
-        if(ndc_x >= 0.0f && ndc_y >= 0.0f) // 1사분면
+        if(ndc_x >= 0.0f && ndc_y >= 0.0f ) // 1사분면
         {
-			mQudrantOneTriangles.clear();
-            mQudrantOneTriangles.push_back(newTriangle);
+            if (mQudrantOneTriangles.size() < 4)
+            {
+                mQudrantOneTriangles.push_back(newTriangle);
+            }
+            else
+            {
+                mQudrantOneTriangles.erase(mQudrantOneTriangles.begin());
+                mQudrantOneTriangles.push_back(newTriangle);
+            }
+            
         }
-        else if (ndc_x < 0.0f && ndc_y >= 0.0f) // 2사분면
+        
+
+        if (ndc_x < 0.0f && ndc_y >= 0.0f) // 2사분면
         {
-			mQudrantTwoTriangles.clear();
-            mQudrantTwoTriangles.push_back(newTriangle);
+            if(mQudrantTwoTriangles.size () < 4)
+            {
+                mQudrantTwoTriangles.push_back(newTriangle);
+            }
+            else
+            {
+                mQudrantTwoTriangles.erase(mQudrantTwoTriangles.begin());
+                mQudrantTwoTriangles.push_back(newTriangle);
+			}
         }
-        else if (ndc_x < 0.0f && ndc_y < 0.0f) // 3사분면
+       
+
+        if (ndc_x < 0.0f && ndc_y < 0.0f) // 3사분면
         {
-			mQudrantThreeTriangles.clear();
-            mQudrantThreeTriangles.push_back(newTriangle);
+            if (mQudrantThreeTriangles.size() < 4)
+            {
+                mQudrantThreeTriangles.push_back(newTriangle);
+            }
+            else
+            {
+                mQudrantThreeTriangles.erase(mQudrantThreeTriangles.begin());
+                mQudrantThreeTriangles.push_back(newTriangle);
+            }
         }
-        else
+        if (ndc_x >= 0.0f && ndc_y < 0.0f) // 4사분면
         {
-			mQudrantFourTriangles.clear();
-            mQudrantFourTriangles.push_back(newTriangle);
-        }
+            if (mQudrantFourTriangles.size() < 4)
+            {
+                mQudrantFourTriangles.push_back(newTriangle);
+            }
+            else
+            {
+                mQudrantFourTriangles.erase(mQudrantFourTriangles.begin());
+                mQudrantFourTriangles.push_back(newTriangle);
+            }
+		}
+
+
+
 			
         
     }

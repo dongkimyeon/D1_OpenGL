@@ -43,6 +43,7 @@ struct Position {
 
 std::vector<Rect> rects;
 std::vector<std::queue<Position>> rectHistories; // 위치 히스토리 저장
+std::vector<Rect> originalRects; // 원래 위치 저장
 GLclampf bgColor[3] = { 0.2f, 0.2f, 0.2f };
 int selectedRectIndex = -1;
 bool isDragging = false;
@@ -145,7 +146,11 @@ void Keyboard(unsigned char key, int x, int y)
         randomIndex = -1;
         break;
     case 'm':
-        // TODO: 처음 원래 사각형 위치로 이동
+        for(int i =0; i < rects.size(); i++)
+        {
+            rects[i] = originalRects[i]; // 원래 위치로 복원
+            while (!rectHistories[i].empty()) rectHistories[i].pop(); 
+		}
         break;
     case 'r':
         rects.clear();
@@ -181,6 +186,7 @@ void Mouse(int button, int state, int x, int y) {
             tempRect.b = color_dist(mt) / 255.0f;
             rects.push_back(tempRect);
             rectHistories.push_back(std::queue<Position>()); // 히스토리 큐 추가
+			originalRects.push_back(tempRect); // 원래 위치 저장
         }
     }
     glutPostRedisplay();

@@ -1,5 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "CommonInclude.h" // filetobuf 함수가 포함된 헤더 파일
+#include <algorithm> // std::clamp
+#include <vector>
+#include <iostream>
+#define M_PI 3.14159265358979323846
 
 // 함수 선언
 void MakeVertexShaders();
@@ -37,7 +41,16 @@ struct Triangle {
     float center_x, center_y; // 삼각형 중심점
     MoveType moveType;
     int Speed;
-	bool reverseflag = false; // 수직 이동 방향 플래그
+    bool reverseflag = false; // 수직 이동 방향 플래그
+    float moveDistance = 0.0f; // 이동 거리
+    // 사각 스파이럴용 변수
+    float spiralStepSize = 0.1f; // 초기 변 길이
+    float currentStepRemaining = 0.1f; // 현재 변에서 남은 이동 거리
+    int spiralTurns = 0; // 회전 횟수
+    // 나선형용 변수
+    float theta = 0.0f; // 현재 각도 (라디안)
+    float radius = 0.1f; // 초기 반지름
+    float angularSpeed = 0.05f; // 각속도 (라디안/프레임)
 };
 
 State globalState = NONE; // 전역 상태 변수
@@ -150,7 +163,6 @@ void InitBuffers() {
     // 위치 속성 (x, y)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)0);
     glEnableVertexAttribArray(0);
-
     // 색상 속성 (r, g, b)
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
@@ -243,7 +255,7 @@ void Mouse(int button, int state, int x, int y) {
 
         newTriangle.moveType = static_cast<MoveType>(4 + (rand() % 4)); // LEFTUP, LEFTDOWN, RIGHTUP, RIGHTDOWN 중 랜덤
         newTriangle.Speed = 10 + (rand() % 20);
-		newTriangle.reverseflag = false;
+        newTriangle.reverseflag = false;
         triangles.push_back(newTriangle);
         glutPostRedisplay();
     }
@@ -260,7 +272,6 @@ void Keyboard(unsigned char key, int x, int y) {
     case '1':
         globalState = ONE;
         for (auto& tri : triangles) {
-            // 랜덤으로 이동 방향 설정 (LEFTUP, LEFTDOWN, RIGHTUP, RIGHTDOWN)
             int moveType = 4 + (rand() % 4);
             tri.moveType = static_cast<MoveType>(moveType);
             std::cout << "MoveType: " << tri.moveType << std::endl;
@@ -269,7 +280,6 @@ void Keyboard(unsigned char key, int x, int y) {
     case '2':
         globalState = TWO;
         for (auto& tri : triangles) {
-            
             int moveType = rand() % 2;
             tri.moveType = static_cast<MoveType>(moveType);
             std::cout << "MoveType: " << tri.moveType << std::endl;
@@ -277,9 +287,24 @@ void Keyboard(unsigned char key, int x, int y) {
         break;
     case '3':
         globalState = THREE;
+        for (auto& tri : triangles) {
+            tri.moveType = RIGHT; // 초기 방향: 오른쪽
+            tri.center_x = 0.0f; // 중심 시작
+            tri.center_y = 0.0f;
+            tri.spiralStepSize = 0.1f; // 초기 변 길이
+            tri.currentStepRemaining = tri.spiralStepSize; // 첫 변 길이
+            tri.spiralTurns = 0;
+        }
         break;
     case '4':
         globalState = FOUR;
+        for (auto& tri : triangles) {
+            tri.theta = 0.0f; // 초기 각도
+            tri.radius = 0.1f; // 초기 반지름
+            tri.angularSpeed = 0.05f + (rand() % 50) / 1000.0f; // 삼각형마다 약간 다른 각속도
+            tri.center_x = 0.0f; // 중심 시작
+            tri.center_y = 0.0f;
+        }
         break;
     case 'c':
         triangles.clear();
@@ -296,7 +321,7 @@ void Keyboard(unsigned char key, int x, int y) {
 void UpdateTriangles() {
     for (auto& tri : triangles) {
         if (globalState == ONE) { // 튕기기
-            float delta = tri.Speed / 1000.0f; // 속도에 따라 이동 거리 계산
+            float delta = tri.Speed / 1000.0f;
 
             // 중심점 이동
             if (tri.moveType == LEFTUP) {
@@ -338,68 +363,214 @@ void UpdateTriangles() {
                 else if (tri.moveType == RIGHTUP) tri.moveType = RIGHTDOWN;
             }
 
-            // 정점 위치 갱신 (중심점 + 오프셋)
+            // 회전 각도 설정
+            float angle;
+            switch (tri.moveType) {
+            case LEFTUP: angle = M_PI / 4.0f; break;
+            case LEFTDOWN: angle = 3.0f * M_PI / 4.0f; break;
+            case RIGHTUP: angle = 7.0f * M_PI / 4.0f; break;
+            case RIGHTDOWN: angle = 5.0f * M_PI / 4.0f; break;
+            default: angle = 0.0f; break;
+            }
+
+            // 정점 위치 갱신
             for (size_t i = 0; i < 3; ++i) {
-                tri.vertices[i * 5] = tri.center_x + tri.offsets[i * 2];     // x
-                tri.vertices[i * 5 + 1] = tri.center_y + tri.offsets[i * 2 + 1]; // y
-                // 색상(r, g, b)은 변경하지 않음
+                float x_offset = tri.offsets[i * 2];
+                float y_offset = tri.offsets[i * 2 + 1];
+                float cos_a = cos(angle);
+                float sin_a = sin(angle);
+                float rotated_x = x_offset * cos_a - y_offset * sin_a;
+                float rotated_y = x_offset * sin_a + y_offset * cos_a;
+                tri.vertices[i * 5] = tri.center_x + rotated_x;
+                tri.vertices[i * 5 + 1] = tri.center_y + rotated_y;
             }
         }
-        else if (globalState == TWO) {
-			float delta = tri.Speed / 1000.0f; // 속도에 따라 이동 거리 계산
-            if(tri.moveType == LEFT) {
-				tri.center_x -= delta;
+        else if (globalState == TWO) { // 지그재그 이동
+            float delta = tri.Speed / 1000.0f;
+
+            // 이동 조건에 따른 이동
+            if (tri.moveType == LEFT) {
+                tri.center_x -= delta;
             }
-            else if(tri.moveType == RIGHT) {
+            else if (tri.moveType == RIGHT) {
                 tri.center_x += delta;
-			}
-			// 경계 체크 및 반사
+            }
+            else if (tri.moveType == UP) {
+                tri.center_y += delta;
+            }
+            else if (tri.moveType == DOWN) {
+                tri.center_y -= delta;
+            }
+
             if (tri.center_y < -1.0f) {
-                tri.reverseflag = true;
+                tri.reverseflag = true; // 다음에는 위로 이동
             }
             else if (tri.center_y > 1.0f) {
-                tri.reverseflag = false;
+                tri.reverseflag = false; // 다음에는 아래로 이동
             }
 
-            if(tri.center_x < -1.0f) {
-                
-                tri.moveType = RIGHT;
-                if (tri.reverseflag == false)
-                {
-                    tri.center_y -= 0.05f;
+            // 경계 닿으면 방향 전환
+            if (tri.center_x < -1.0f) {
+                if (tri.reverseflag == false) {
+                    tri.moveType = DOWN;
+                    tri.moveDistance += delta;
+                    if (tri.moveDistance >= 0.2f) {
+                        tri.moveType = RIGHT;
+                        tri.moveDistance = 0.0f;
+                    }
                 }
-                else
-                {
-					tri.center_y += 0.05f;
+                else {
+                    tri.moveType = UP;
+                    tri.moveDistance += delta;
+                    if (tri.moveDistance >= 0.2f) {
+                        tri.moveType = RIGHT;
+                        tri.moveDistance = 0.0f;
+                    }
                 }
-                
             }
-            else if(tri.center_x > 1.0f) {
-                
-                tri.moveType = LEFT;
-                if (tri.reverseflag == false)
-                {
-                    tri.center_y -= 0.1f;
+            else if (tri.center_x > 1.0f) {
+                if (tri.reverseflag == false) {
+                    tri.moveType = DOWN;
+                    tri.moveDistance += delta;
+                    if (tri.moveDistance >= 0.2f) {
+                        tri.moveType = LEFT;
+                        tri.moveDistance = 0.0f;
+                    }
                 }
-                else
-                {
-                    tri.center_y += 0.1f;
+                else {
+                    tri.moveType = UP;
+                    tri.moveDistance += delta;
+                    if (tri.moveDistance >= 0.2f) {
+                        tri.moveType = LEFT;
+                        tri.moveDistance = 0.0f;
+                    }
                 }
-			}
+            }
 
-           
+            float angle = 0.0f;
+            if (tri.moveType == LEFT) angle = M_PI / 2;
+            else if (tri.moveType == RIGHT) angle = -M_PI / 2;
+            else if (tri.moveType == UP) angle = 0.0f;
+            else if (tri.moveType == DOWN) angle = M_PI;
 
-            // 정점 위치 갱신 (중심점 + 오프셋)
+            // 정점 위치 갱신
             for (size_t i = 0; i < 3; ++i) {
-                tri.vertices[i * 5] = tri.center_x + tri.offsets[i * 2];     // x
-                tri.vertices[i * 5 + 1] = tri.center_y + tri.offsets[i * 2 + 1]; // y
+                float x_offset = tri.offsets[i * 2];
+                float y_offset = tri.offsets[i * 2 + 1];
+                float cos_a = cos(angle);
+                float sin_a = sin(angle);
+                float rotated_x = x_offset * cos_a - y_offset * sin_a;
+                float rotated_y = x_offset * sin_a + y_offset * cos_a;
+                tri.vertices[i * 5] = tri.center_x + rotated_x;
+                tri.vertices[i * 5 + 1] = tri.center_y + rotated_y;
             }
         }
-        else if (globalState == THREE) {
-            // TODO: 사각 스파이럴 구현
+        else if (globalState == THREE) { // 사각 스파이럴
+            float delta = tri.Speed / 1000.0f;
+
+            // 현재 방향에 따라 중심점 이동
+            if (tri.moveType == RIGHT) {
+                tri.center_x += delta;
+            }
+            else if (tri.moveType == DOWN) {
+                tri.center_y -= delta;
+            }
+            else if (tri.moveType == LEFT) {
+                tri.center_x -= delta;
+            }
+            else if (tri.moveType == UP) {
+                tri.center_y += delta;
+            }
+
+            // 남은 이동 거리 감소
+            tri.currentStepRemaining -= delta;
+
+            // 남은 거리가 0 이하 되면 방향 전환
+            if (tri.currentStepRemaining <= 0.0f) {
+                // 다음 방향으로 전환 (시계 방향: RIGHT -> DOWN -> LEFT -> UP -> RIGHT)
+                if (tri.moveType == RIGHT) {
+                    tri.moveType = DOWN;
+                }
+                else if (tri.moveType == DOWN) {
+                    tri.moveType = LEFT;
+                }
+                else if (tri.moveType == LEFT) {
+                    tri.moveType = UP;
+                }
+                else if (tri.moveType == UP) {
+                    tri.moveType = RIGHT;
+                }
+
+                // 회전 횟수 증가
+                tri.spiralTurns++;
+
+                // 1번 회전마다 stepSize 증가 (스파이럴 확대)
+                if (tri.spiralTurns % 1 == 0) {
+                    tri.spiralStepSize += 0.12f;
+                }
+
+                // 다음 변의 남은 거리 설정
+                tri.currentStepRemaining = tri.spiralStepSize;
+            }
+
+            // 초기 위치로 돌아가기
+            if (tri.center_x > 1.0f || tri.center_x < -1.0f || tri.center_y < -1.0f || tri.center_y > 1.0f) {
+                tri.center_x = 0.0f;
+                tri.center_y = 0.0f;
+                tri.moveType = None;
+            }
+
+            // 각도 반영
+            float angle = 0.0f;
+            if (tri.moveType == LEFT) angle = M_PI / 2.0f;
+            else if (tri.moveType == RIGHT) angle = -M_PI / 2.0f;
+            else if (tri.moveType == UP) angle = 0.0f;
+            else if (tri.moveType == DOWN) angle = M_PI;
+
+            // 정점 위치 갱신
+            for (size_t i = 0; i < 3; ++i) {
+                float x_offset = tri.offsets[i * 2];
+                float y_offset = tri.offsets[i * 2 + 1];
+                float cos_a = cos(angle);
+                float sin_a = sin(angle);
+                float rotated_x = x_offset * cos_a - y_offset * sin_a;
+                float rotated_y = x_offset * sin_a + y_offset * cos_a;
+                tri.vertices[i * 5] = tri.center_x + rotated_x;
+                tri.vertices[i * 5 + 1] = tri.center_y + rotated_y;
+            }
         }
-        else if (globalState == FOUR) {
-            // TODO: 나선형 구현
+        else if (globalState == FOUR) { // 나선형
+            
+            tri.theta += tri.angularSpeed; // 각속도
+            tri.radius += 0.001f; // 반지름 증가율 
+            // 중심점 계산 (극좌표 -> 직교좌표)
+            tri.center_x = tri.radius * cos(tri.theta);
+            tri.center_y = tri.radius * sin(tri.theta);
+
+            // 경계 체크 및 리셋
+            if (tri.radius > 1.0f || tri.center_x > 1.0f || tri.center_x < -1.0f ||
+                tri.center_y > 1.0f || tri.center_y < -1.0f) {
+                tri.theta = 0.0f;
+                tri.radius = 0.1f; // 초기 반지름으로 리셋
+                tri.center_x = 0.0f;
+                tri.center_y = 0.0f;
+            }
+
+            // 이동 방향(접선 방향)에 따른 삼각형 회전
+            // 원의 접선 방향 벡터: (-sin(theta), cos(theta))
+            float tangent_angle = tri.theta; // 접선 방향 (90도 회전)
+
+            // 정점 위치 갱신
+            for (size_t i = 0; i < 3; ++i) {
+                float x_offset = tri.offsets[i * 2];
+                float y_offset = tri.offsets[i * 2 + 1];
+                float cos_a = cos(tangent_angle);
+                float sin_a = sin(tangent_angle);
+                float rotated_x = x_offset * cos_a - y_offset * sin_a;
+                float rotated_y = x_offset * sin_a + y_offset * cos_a;
+                tri.vertices[i * 5] = tri.center_x + rotated_x;
+                tri.vertices[i * 5 + 1] = tri.center_y + rotated_y;
+            }
         }
         // NONE 상태는 이동하지 않음
     }
