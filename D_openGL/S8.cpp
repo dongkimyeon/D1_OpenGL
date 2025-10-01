@@ -23,7 +23,7 @@ GLuint shaderProgramID, vertexShader, fragmentShader;
 GLuint VAO, VBO, EBO;
 
 // 도형 타입 정의
-enum ShapeType { point, LINE, TRIANGLE, RECTANGLE };
+enum ShapeType { P, LINE, TRIANGLE, RECTANGLE };
 
 struct Shape {
     ShapeType type;
@@ -36,6 +36,8 @@ struct Shape {
 std::vector<Shape> shapes;
 int selectedShapeIndex = -1; // 선택된 도형 인덱스 (-1: 선택 없음)
 char currentShape = 'p'; // 기본적으로 점 그리기
+std::vector<GLfloat> tempVertices; // 임시 점 데이터
+bool isDrawingPolygon = false; // 다각형 그리기 모드 플래그
 
 int main(int argc, char** argv) {
     srand(static_cast<unsigned>(time(0))); // 랜덤 시드 초기화
@@ -161,44 +163,64 @@ void DrawScene() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    //렌더러가 그릴 객체를 선택할 수 있게 셰이더 프로그램에 따라 
     glUseProgram(shaderProgramID);
     glBindVertexArray(VAO);
 
+    // 임시 점들 그리기 (다각형 그리기 중일 때)
+    if (isDrawingPolygon && !tempVertices.empty()) {
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, tempVertices.size() * sizeof(GLfloat), tempVertices.data(), GL_DYNAMIC_DRAW);
+        glPointSize(10.0f);
+        glEnable(GL_POINT_SMOOTH);
+        glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+        GLint isBorderLoc = glGetUniformLocation(shaderProgramID, "isBorder");
+        glUniform1i(isBorderLoc, 0);
+        glDrawArrays(GL_POINTS, 0, tempVertices.size() / 8);
+        glDisable(GL_POINT_SMOOTH);
+    }
+
+    // 저장된 도형들 그리기
     for (const auto& shape : shapes) {
-        if (shape.vertices.empty()) continue; // 빈 도형 스킵
-        // 정점 데이터 전송
+        if (shape.vertices.empty()) continue;
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferData(GL_ARRAY_BUFFER, shape.vertices.size() * sizeof(GLfloat), shape.vertices.data(), GL_DYNAMIC_DRAW);
 
-        //셰이더 내에 있는 변수의 위치 가져오기
         GLint isBorderLoc = glGetUniformLocation(shaderProgramID, "isBorder");
 
         switch (shape.type) {
-        case point:
-            glPointSize(10.0f);
-			glUniform1i(isBorderLoc, 0); //위치에 값 설정 (0: 내부 색상, 1: 테두리 색상)
-            glDrawArrays(GL_POINTS, 0, shape.vertexCount);
+        case P:
+            if (shape.vertexCount == 1) { // 단일 점
+                glPointSize(10.0f);
+                glEnable(GL_POINT_SMOOTH);
+                glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+                glUniform1i(isBorderLoc, 0);
+                glDrawArrays(GL_POINTS, 0, shape.vertexCount);
+                glDisable(GL_POINT_SMOOTH);
+            }
+            else { // 다각형
+                glUniform1i(isBorderLoc, 0); // 내부 색상
+                glDrawArrays(GL_TRIANGLE_FAN, 0, shape.vertexCount); // 다각형 내부 채우기
+                glLineWidth(2.0f);
+                glUniform1i(isBorderLoc, 1); // 테두리 색상
+                glDrawArrays(GL_LINE_LOOP, 0, shape.vertexCount); // 다각형 테두리
+            }
             break;
         case LINE:
             glLineWidth(3.0f);
-            glUniform1i(isBorderLoc, 0); 
+            glUniform1i(isBorderLoc, 0);
             glDrawArrays(GL_LINES, 0, shape.vertexCount);
             break;
         case TRIANGLE:
-            glUniform1i(isBorderLoc, 0); 
+            glUniform1i(isBorderLoc, 0);
             glDrawArrays(GL_TRIANGLES, 0, shape.vertexCount);
             break;
         case RECTANGLE:
-            // 인덱스 데이터 전송
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, shape.indices.size() * sizeof(GLuint), shape.indices.data(), GL_DYNAMIC_DRAW);
-            // 내부 채우기
-            glUniform1i(isBorderLoc, 0); // 내부 색상 사용
+            glUniform1i(isBorderLoc, 0); // 내부 색상
             glDrawElements(GL_TRIANGLES, shape.indices.size(), GL_UNSIGNED_INT, 0);
-            // 테두리 그리기
             glLineWidth(2.0f);
-            glUniform1i(isBorderLoc, 1); // 테두리 색상 사용
+            glUniform1i(isBorderLoc, 1); // 테두리 색상
             glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);
             break;
         }
@@ -219,63 +241,56 @@ void Mouse(int button, int state, int x, int y) {
         float ndc_x = (2.0f * x / width) - 1.0f;
         float ndc_y = 1.0f - (2.0f * y / height);
 
-        Shape newShape;
-        if (currentShape == 'p') {
-            newShape.type = point;
-        }
-        else if (currentShape == 'n') {
-            newShape.type = LINE;
-        }
-        else if (currentShape == 't') {
-            newShape.type = TRIANGLE;
-        }
-        else {
-            newShape.type = RECTANGLE;
-        }
-
-        // 색상: 랜덤 (내부 색상)
         float r = (rand() % 100) / 100.0f;
         float g = (rand() % 100) / 100.0f;
         float b = (rand() % 100) / 100.0f;
-        // 테두리 색상: 내부 색상과 다르게 설정 (예: 반전 색상)
         float border_r = 1.0f - r;
         float border_g = 1.0f - g;
         float border_b = 1.0f - b;
 
-        // 도형 크기
-        float size = 0.1f;
-        switch (newShape.type) {
-        case point:
-            newShape.vertices = { ndc_x, ndc_y, r, g, b, r, g, b }; // 테두리 색상 동일
-            newShape.vertexCount = 1;
-            break;
-        case LINE:
+        if (currentShape == 'p') {
+            isDrawingPolygon = true;
+            tempVertices.insert(tempVertices.end(), { ndc_x, ndc_y, r, g, b, border_r, border_g, border_b });
+            glutPostRedisplay();
+        }
+        else if (currentShape == 'n') {
+            Shape newShape;
+            newShape.type = LINE;
+            float size = 0.1f;
             newShape.vertices = { ndc_x, ndc_y, r, g, b, r, g, b,
                                  ndc_x + size, ndc_y + size, r, g, b, r, g, b };
             newShape.vertexCount = 2;
-            break;
-        case TRIANGLE:
+            shapes.push_back(newShape);
+            glutPostRedisplay();
+        }
+        else if (currentShape == 't') {
+            Shape newShape;
+            newShape.type = TRIANGLE;
+            float size = 0.1f;
             newShape.vertices = {
                 ndc_x, ndc_y, r, g, b, r, g, b,
                 ndc_x + size, ndc_y, r, g, b, r, g, b,
                 ndc_x, ndc_y + size, r, g, b, r, g, b
             };
             newShape.vertexCount = 3;
-            break;
-        case RECTANGLE:
-            newShape.vertices = {
-                ndc_x, ndc_y, r, g, b, border_r, border_g, border_b,                    // 좌하 
-                ndc_x + size, ndc_y, r, g, b, border_r, border_g, border_b,             // 우하 
-                ndc_x + size, ndc_y + size, r, g, b, border_r, border_g, border_b,      // 우상 
-                ndc_x, ndc_y + size, r, g, b, border_r, border_g, border_b              // 좌상 
-            };
-            newShape.indices = { 0, 1, 3, 1, 2, 3 }; // 두 삼각형: (0,1,3), (1,2,3)
-            newShape.vertexCount = 4;
-            break;
+            shapes.push_back(newShape);
+            glutPostRedisplay();
         }
-
-        shapes.push_back(newShape);
-        glutPostRedisplay();
+        else if (currentShape == 'r') {
+            Shape newShape;
+            newShape.type = RECTANGLE;
+            float size = 0.1f;
+            newShape.vertices = {
+                ndc_x, ndc_y, r, g, b, border_r, border_g, border_b,
+                ndc_x + size, ndc_y, r, g, b, border_r, border_g, border_b,
+                ndc_x + size, ndc_y + size, r, g, b, border_r, border_g, border_b,
+                ndc_x, ndc_y + size, r, g, b, border_r, border_g, border_b
+            };
+            newShape.indices = { 0, 1, 3, 1, 2, 3 };
+            newShape.vertexCount = 4;
+            shapes.push_back(newShape);
+            glutPostRedisplay();
+        }
     }
     else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
         float ndc_x = (2.0f * x / width) - 1.0f;
@@ -303,10 +318,27 @@ void Keyboard(unsigned char key, int x, int y) {
     case 't': // 삼각형
     case 'r': // 사각형
         currentShape = key;
+        tempVertices.clear(); // 모드 변경 시 임시 점 초기화
+        isDrawingPolygon = false;
+        glutPostRedisplay();
+        break;
+    case 'f': // 다각형 완성
+        if (isDrawingPolygon && tempVertices.size() >= 3 * 8) { // 최소 3개의 점 필요
+            Shape newShape;
+            newShape.type = P;
+            newShape.vertices = tempVertices;
+            newShape.vertexCount = tempVertices.size() / 8;
+            shapes.push_back(newShape);
+            tempVertices.clear();
+            isDrawingPolygon = false;
+            glutPostRedisplay();
+        }
         break;
     case 'c': // 모든 도형 삭제
         shapes.clear();
+        tempVertices.clear();
         selectedShapeIndex = -1;
+        isDrawingPolygon = false;
         glutPostRedisplay();
         break;
     case 'w': // 위로 이동
