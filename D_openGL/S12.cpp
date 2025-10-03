@@ -57,6 +57,7 @@ const float pentTopY = 0.6f; // 오각형 최상단 y
 const float pentMidX = 0.5f; // 오각형 중단 x (대칭 위해)
 const int totalFrames = 60; // 각 phase 애니메이션 프레임 수 (약 1초)
 const int pauseFrames = 60; // 각 phase 간 딜레이 프레임 수 (약 1초)
+bool viewMode = true; // f: 다 출력 t : 중앙에 하나만 출력 
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -143,7 +144,7 @@ GLuint MakeShaderProgram() {
     GLchar errorLog[512];
     glGetProgramiv(shaderID, GL_LINK_STATUS, &result);
     if (!result) {
-        glGetProgramInfoLog(shaderID, 512, NULL, errorLog);
+        glGetShaderInfoLog(shaderID, 512, NULL, errorLog);
         std::cerr << "ERROR: shader program 연결 실패\n" << errorLog << std::endl;
         return 0;
     }
@@ -231,31 +232,45 @@ void InitQuadrants() {
 // 사분면에 따라 좌표 변환 + 중앙 오프셋 함수
 std::vector<GLfloat> TransformVerticesForQuadrant(const std::vector<Point>& points, int quadrant) {
     std::vector<GLfloat> data;
-    for (const auto& point : points) {
-        GLfloat x = point.vertices[0];
-        GLfloat y = point.vertices[1];
-        switch (quadrant) {
-        case 1: // 오른쪽 위
-            x += 0.5f;
-            y += 0.3f;
-            break;
-        case 2: // 왼쪽 위
-            x = -x - 0.5f;
-            y += 0.3f;
-            break;
-        case 3: // 왼쪽 아래
-            x = x - 0.5f;
-            y = y - 0.7f;
-            break;
-        case 4: // 오른쪽 아래
-            x += 0.5f;
-            y = y - 0.7f;
-            break;
+    if (viewMode == false)
+    {
+        for (const auto& point : points) {
+            GLfloat x = point.vertices[0];
+            GLfloat y = point.vertices[1];
+            switch (quadrant) {
+            case 1: // 오른쪽 위
+                x += 0.5f;
+                y += 0.3f;
+                break;
+            case 2: // 왼쪽 위
+                x = -x - 0.5f;
+                y += 0.3f;
+                break;
+            case 3: // 왼쪽 아래
+                x = x - 0.5f;
+                y = y - 0.7f;
+                break;
+            case 4: // 오른쪽 아래
+                x += 0.5f;
+                y = y - 0.7f;
+                break;
+            }
+            data.push_back(x);
+            data.push_back(y);
+            data.insert(data.end(), point.vertices.begin() + 2, point.vertices.end()); // r,g,b 추가
         }
-        data.push_back(x);
-        data.push_back(y);
-        data.insert(data.end(), point.vertices.begin() + 2, point.vertices.end()); // r,g,b 추가
     }
+    else
+    {
+        for (const auto& point : points) {
+            GLfloat x = point.vertices[0];
+            GLfloat y = point.vertices[1];
+            data.push_back(x);
+            data.push_back(y);
+            data.insert(data.end(), point.vertices.begin() + 2, point.vertices.end()); // r,g,b 추가
+        }
+    }
+
     return data;
 }
 
@@ -265,25 +280,87 @@ void DrawScene() {
     glUseProgram(shaderProgramID);
     glBindVertexArray(VAO);
 
-    // 화면을 4등분하는 선 (기존 코드 유지)
-    std::vector<GLfloat> lines = {
-        // 수직선
-        0.0f, -1.0f, 1.0f, 1.0f, 1.0f,
-        0.0f,  1.0f, 1.0f, 1.0f, 1.0f,
-        // 수평선
-        -1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-         1.0f, 0.0f, 1.0f, 1.0f, 1.0f
-    };
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, lines.size() * sizeof(GLfloat), lines.data(), GL_DYNAMIC_DRAW);
-
-    glLineWidth(2.0f);
-    glDrawArrays(GL_LINES, 0, 4);
-
     // 각 사분면에 독립적인 도형 그리기
-    for (int quad = 1; quad <= 4; ++quad) {
-        int qidx = quad - 1;
+    if (viewMode == false)
+    {
+        // 화면을 4등분하는 선
+        std::vector<GLfloat> lines = {
+            // 수직선
+            0.0f, -1.0f, 1.0f, 1.0f, 1.0f,
+            0.0f,  1.0f, 1.0f, 1.0f, 1.0f,
+            // 수평선
+            -1.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+             1.0f, 0.0f, 1.0f, 1.0f, 1.0f
+        };
+
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, lines.size() * sizeof(GLfloat), lines.data(), GL_DYNAMIC_DRAW);
+
+        glLineWidth(2.0f);
+        glDrawArrays(GL_LINES, 0, 4);
+
+        for (int quad = 1; quad <= 4; ++quad) {
+            int qidx = quad - 1;
+            const auto& state = quadrants[qidx];
+            size_t numPoints = state.tempVertices.size();
+            if (numPoints >= 2) {
+                std::vector<GLfloat> quadData;
+                const std::vector<Point>& points = state.tempVertices;
+
+                if (numPoints == 2) {
+                    // 선: 2개 정점 변환
+                    std::vector<GLfloat> transformed = TransformVerticesForQuadrant(points, quad);
+                    quadData = transformed;
+                    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                    glBufferData(GL_ARRAY_BUFFER, quadData.size() * sizeof(GLfloat), quadData.data(), GL_DYNAMIC_DRAW);
+                    glLineWidth(4.0f);
+                    glDrawArrays(GL_LINES, 0, 2);
+                }
+                else if (numPoints == 3) {
+                    // 삼각형: 3개 정점 변환
+                    std::vector<GLfloat> transformed = TransformVerticesForQuadrant(points, quad);
+                    quadData = transformed;
+                    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                    glBufferData(GL_ARRAY_BUFFER, quadData.size() * sizeof(GLfloat), quadData.data(), GL_DYNAMIC_DRAW);
+                    glDrawArrays(GL_TRIANGLES, 0, 3);
+                }
+                else if (numPoints == 4) {
+                    // 사각형: 두 개의 삼각형 변환
+                    // tri1: P0, P1, P2
+                    std::vector<Point> tri1 = { points[0], points[1], points[2] };
+                    std::vector<GLfloat> transformed1 = TransformVerticesForQuadrant(tri1, quad);
+                    quadData.insert(quadData.end(), transformed1.begin(), transformed1.end());
+                    // tri2: P0, P2, P3
+                    std::vector<Point> tri2 = { points[0], points[2], points[3] };
+                    std::vector<GLfloat> transformed2 = TransformVerticesForQuadrant(tri2, quad);
+                    quadData.insert(quadData.end(), transformed2.begin(), transformed2.end());
+                    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                    glBufferData(GL_ARRAY_BUFFER, quadData.size() * sizeof(GLfloat), quadData.data(), GL_DYNAMIC_DRAW);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                }
+                else if (numPoints == 5) {
+                    // 오각형: GL_TRIANGLE_FAN 변환 (순서 유지)
+                    // 첫 점 (P0) 반복 추가
+                    std::vector<Point> fanPoints = { points[0] };
+                    // 순서: P1, P2, P4, P3, P0
+                    int order[5] = { 1, 2, 4, 3, 0 };
+                    for (int i = 0; i < 5; ++i) {
+                        fanPoints.push_back(points[order[i]]);
+                    }
+                    std::vector<GLfloat> transformed = TransformVerticesForQuadrant(fanPoints, quad);
+                    quadData = transformed;
+                    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                    glBufferData(GL_ARRAY_BUFFER, quadData.size() * sizeof(GLfloat), quadData.data(), GL_DYNAMIC_DRAW);
+                    glDrawArrays(GL_TRIANGLE_FAN, 0, 6); // 6 버텍스
+                }
+            }
+        }
+    }
+    else
+    {
+        //중앙에 하나만 
+        int quad = 0;
+        int qidx = 0;
         const auto& state = quadrants[qidx];
         size_t numPoints = state.tempVertices.size();
         if (numPoints >= 2) {
@@ -339,6 +416,7 @@ void DrawScene() {
         }
     }
 
+
     glBindVertexArray(0);
     glutSwapBuffers();
 }
@@ -356,7 +434,91 @@ void Mouse(int button, int state, int x, int y) {
 }
 
 void Keyboard(unsigned char key, int x, int y) {
-    // 키보드 이벤트는 기존과 동일 (미구현)
+    switch (key)
+    {
+    case 'l':
+    {
+        viewMode = true;
+        quadrants[0].tempVertices.clear();
+        InitLine(quadrants[0].tempVertices);
+        quadrants[0].animationPhase = 1;
+        quadrants[0].currentFrame = 0;
+        quadrants[0].pauseRemaining = 0;
+        quadrants[0].originalPositions.clear();
+        break;
+    }
+    case 't':
+    {
+        viewMode = true;
+        quadrants[0].tempVertices.clear();
+        auto c0 = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {-baseX, 0.0f, c0[0], c0[1], c0[2]} });
+        auto c1 = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {baseX, 0.0f, c1[0], c1[1], c1[2]} });
+        auto c2 = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {0.0f, topY, c2[0], c2[1], c2[2]} });
+        auto c3 = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {0.0f, topY, c3[0], c3[1], c3[2]} });
+        quadrants[0].animationPhase = 2;
+        quadrants[0].currentFrame = 0;
+        quadrants[0].pauseRemaining = 0;
+        quadrants[0].originalPositions.clear();
+        break;
+    }
+    case 'r':
+    {
+        viewMode = true;
+        quadrants[0].tempVertices.clear();
+        auto c0r = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {-baseX, 0.0f, c0r[0], c0r[1], c0r[2]} });
+        auto c1r = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {baseX, 0.0f, c1r[0], c1r[1], c1r[2]} });
+        auto c2r = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {expandX, topY, c2r[0], c2r[1], c2r[2]} });
+        auto c3r = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {-expandX, topY, c3r[0], c3r[1], c3r[2]} });
+        auto c4r = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {0.0f, topY, c4r[0], c4r[1], c4r[2]} });
+        quadrants[0].animationPhase = 3;
+        quadrants[0].currentFrame = 0;
+        quadrants[0].pauseRemaining = 0;
+        quadrants[0].originalPositions.clear();
+        break;
+    }
+    case 'p':
+    {
+        viewMode = true;
+        quadrants[0].tempVertices.clear();
+        auto c0p = randomColor();
+        float p0x = -baseX;
+        quadrants[0].tempVertices.push_back(Point{ {p0x, 0.0f, c0p[0], c0p[1], c0p[2]} });
+        auto c1p = randomColor();
+        float p1x = baseX;
+        quadrants[0].tempVertices.push_back(Point{ {p1x, 0.0f, c1p[0], c1p[1], c1p[2]} });
+        auto c2p = randomColor();
+        float p2x = expandX + (pentMidX - expandX) * 1.0f / 2.0f;
+        quadrants[0].tempVertices.push_back(Point{ {p2x, topY, c2p[0], c2p[1], c2p[2]} });
+        auto c3p = randomColor();
+        float p3x = -expandX + (-pentMidX + expandX) * 1.0f / 2.0f;
+        quadrants[0].tempVertices.push_back(Point{ {p3x, topY, c3p[0], c3p[1], c3p[2]} });
+        auto c4p = randomColor();
+        quadrants[0].tempVertices.push_back(Point{ {0.0f, pentTopY, c4p[0], c4p[1], c4p[2]} });
+        quadrants[0].animationPhase = 4;
+        quadrants[0].currentFrame = 0;
+        quadrants[0].pauseRemaining = 0;
+        quadrants[0].originalPositions = quadrants[0].tempVertices;
+        break;
+    }
+    case 'a':
+        viewMode = false;
+        InitQuadrants();
+        break;
+    case 'q':
+        exit(0);
+        break;
+    default:
+        break;
+    }
     glutPostRedisplay();
 }
 
