@@ -1,12 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <GL/glew.h>
-#include <GL/freeglut.h>
-#include <iostream>
-#include <vector>
-#include <cstdlib>
-#include <ctime>
-#include "CommonInclude.h" // filetobuf 함수가 포함된 헤더 파일
-
+#include "CommonInclude.h" 
 // 함수 선언
 void MakeVertexShaders();
 void MakeFragmentShaders();

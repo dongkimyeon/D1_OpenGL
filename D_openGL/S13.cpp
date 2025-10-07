@@ -503,6 +503,10 @@ void UpdateMovement()
     }
 }
 
+void InitShape()
+{
+}
+
 void Keyboard(unsigned char key, int x, int y) {
     switch (key)
     {
