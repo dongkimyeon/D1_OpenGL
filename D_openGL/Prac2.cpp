@@ -1,7 +1,7 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include "CommonInclude.h" // filetobuf ÇÔ¼ö¿Í ObjRead.h Æ÷ÇÔ
+ï»¿#define _CRT_SECURE_NO_WARNINGS
+#include "CommonInclude.h" // filetobuf í•¨ìˆ˜ì™€ ObjRead.h í¬í•¨
 
-// ÇÔ¼ö ¼±¾ğ
+// í•¨ìˆ˜ ì„ ì–¸
 void MakeVertexShaders();
 void MakeFragmentShaders();
 GLuint MakeShaderProgram();
@@ -10,17 +10,17 @@ GLvoid DrawScene();
 GLvoid Reshape(int w, int h);
 void Mouse(int button, int state, int x, int y);
 void Keyboard(unsigned char key, int x, int y);
+void SpecialKeyboard(int key, int x, int y); // íŠ¹ìˆ˜ í‚¤(í™”ì‚´í‘œ) ì²˜ë¦¬ í•¨ìˆ˜ ì„ ì–¸
 void LoadOBJ(const char* filename);
 
-// Àü¿ª º¯¼ö
+// ì „ì—­ ë³€ìˆ˜
 GLint width = 800, height = 600;
 GLuint shaderProgramID, vertexShader, fragmentShader;
 GLuint VAO, VBO, EBO;
 
-// OBJ µ¥ÀÌÅÍ ÀúÀå (ObjRead.h¿¡¼­ Á¤ÀÇµÈ ±¸Á¶Ã¼ »ç¿ë)
 Model model;
 
-// µµÇü Å¸ÀÔ Á¤ÀÇ
+// ë„í˜• íƒ€ì… ì •ì˜
 enum ShapeType { P, LINE, TRIANGLE, RECTANGLE };
 
 struct Shape {
@@ -30,18 +30,25 @@ struct Shape {
 };
 
 Shape test = { P, {0.0f, 0.0f}, {0.0f, 1.0f, 0.0f} };
+glm::vec3 cameraPos = glm::vec3(5.0f, 5.0f, 5.0f);
+float cameraAngle = glm::atan(1.0f); // ì´ˆê¸° ê°ë„ (45ë„ ë¼ë””ì•ˆ)
+
+// ë„í˜•(ëª¨ë¸) ì´ë™ ë° íšŒì „ ê´€ë ¨ ì¶”ê°€ ì „ì—­ ë³€ìˆ˜
+glm::vec3 modelPos = glm::vec3(0.0f, 0.0f, 0.0f);  // ë„í˜• ìœ„ì¹˜ (X, Y, Z ì´ë™ëŸ‰)
+float modelRotY = 0.0f;  // Yì¶• íšŒì „ ê°ë„ (ë¼ë””ì•ˆ)
+float modelRotX = 0.0f;  // Xì¶• íšŒì „ ê°ë„ (ë¼ë””ì•ˆ)
 
 int main(int argc, char** argv) {
-    srand(static_cast<unsigned>(time(0))); // ·£´ı ½Ãµå ÃÊ±âÈ­
+    srand(static_cast<unsigned>(time(0))); // ëœë¤ ì‹œë“œ ì´ˆê¸°í™”
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH); // GLUT_DEPTH Ãß°¡
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH); // GLUT_DEPTH ì¶”ê°€
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(width, height);
     glutCreateWindow("Prac");
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
-        std::cerr << "GLEW ÃÊ±âÈ­ ½ÇÆĞ" << std::endl;
+        std::cerr << "GLEW ì´ˆê¸°í™” ì‹¤íŒ¨" << std::endl;
         return -1;
     }
 
@@ -49,11 +56,11 @@ int main(int argc, char** argv) {
     MakeFragmentShaders();
     shaderProgramID = MakeShaderProgram();
     if (shaderProgramID == 0) {
-        std::cerr << "¼ÎÀÌ´õ ÇÁ·Î±×·¥ »ı¼º ½ÇÆĞ" << std::endl;
+        std::cerr << "ì…°ì´ë” í”„ë¡œê·¸ë¨ ìƒì„± ì‹¤íŒ¨" << std::endl;
         return -1;
     }
 
-    // OBJ ÆÄÀÏ ·Îµå
+    // OBJ íŒŒì¼ ë¡œë“œ
     LoadOBJ("cube.obj");
 
     InitBuffers();
@@ -62,6 +69,7 @@ int main(int argc, char** argv) {
     glutReshapeFunc(Reshape);
     glutMouseFunc(Mouse);
     glutKeyboardFunc(Keyboard);
+    glutSpecialFunc(SpecialKeyboard); // íŠ¹ìˆ˜ í‚¤(í™”ì‚´í‘œ) í•¨ìˆ˜ ë“±ë¡
 
     glutMainLoop();
     return 0;
@@ -70,17 +78,17 @@ int main(int argc, char** argv) {
 void LoadOBJ(const char* filename) {
     read_obj_file(filename, &model);
     if (model.vertex_count == 0 || model.face_count == 0) {
-        std::cerr << "OBJ ·Îµå ½ÇÆĞ: " << filename << std::endl;
+        std::cerr << "OBJ ë¡œë“œ ì‹¤íŒ¨: " << filename << std::endl;
     }
     else {
-        std::cout << "OBJ ·Îµå ¿Ï·á: " << model.vertex_count << " ¹öÅØ½º, " << model.face_count << " ÆäÀÌ½º" << std::endl;
+        std::cout << "OBJ ë¡œë“œ ì™„ë£Œ: " << model.vertex_count << " ë²„í…ìŠ¤, " << model.face_count << " í˜ì´ìŠ¤" << std::endl;
     }
 }
 
 void MakeVertexShaders() {
     GLchar* vertexSource = filetobuf("vertex.glsl");
     if (!vertexSource) {
-        std::cerr << "ERROR: vertex.glsl ÆÄÀÏÀ» ÀĞÁö ¸øÇß½À´Ï´Ù." << std::endl;
+        std::cerr << "ERROR: vertex.glsl íŒŒì¼ì„ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤." << std::endl;
         return;
     }
 
@@ -93,7 +101,7 @@ void MakeVertexShaders() {
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
     if (!result) {
         glGetShaderInfoLog(vertexShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: vertex shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: vertex shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
     }
     free(vertexSource);
 }
@@ -101,7 +109,7 @@ void MakeVertexShaders() {
 void MakeFragmentShaders() {
     GLchar* fragmentSource = filetobuf("fragment.glsl");
     if (!fragmentSource) {
-        std::cerr << "ERROR: fragment.glsl ÆÄÀÏÀ» ÀĞÁö ¸øÇß½À´Ï´Ù." << std::endl;
+        std::cerr << "ERROR: fragment.glsl íŒŒì¼ì„ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤." << std::endl;
         return;
     }
 
@@ -114,7 +122,7 @@ void MakeFragmentShaders() {
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
     if (!result) {
         glGetShaderInfoLog(fragmentShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: fragment shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: fragment shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
     }
     free(fragmentSource);
 }
@@ -130,7 +138,7 @@ GLuint MakeShaderProgram() {
     glGetProgramiv(shaderID, GL_LINK_STATUS, &result);
     if (!result) {
         glGetProgramInfoLog(shaderID, 512, NULL, errorLog);
-        std::cerr << "ERROR: shader program ¿¬°á ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: shader program ì—°ê²° ì‹¤íŒ¨\n" << errorLog << std::endl;
         return 0;
     }
 
@@ -152,64 +160,49 @@ void InitBuffers() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
 
-    // ½ÇÁ¦ µ¥ÀÌÅÍ Å©±â: 3(pos) + 3(color) = 6 floats
-    const GLsizei stride = 6 * sizeof(GLfloat);
-    // À§Ä¡ ¼Ó¼º (x, y, z)
+
+    const GLsizei stride = 3 * sizeof(GLfloat);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
     glEnableVertexAttribArray(0);
 
-    // »ö»ó ¼Ó¼º (r, g, b)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));  // ¿ÀÇÁ¼Â: À§Ä¡ ´ÙÀ½
-    glEnableVertexAttribArray(1);
-
-    glBindVertexArray(0);  // ¾ğ¹ÙÀÎµå Ãß°¡
+    glBindVertexArray(0);  // ì–¸ë°”ì¸ë“œ ì¶”ê°€
 }
 
 void DrawScene() {
     if (model.vertex_count == 0 || model.face_count == 0) {
-        std::cerr << "OBJ µ¥ÀÌÅÍ°¡ ·ÎµåµÇÁö ¾Ê¾Ò½À´Ï´Ù." << std::endl;
+        std::cerr << "OBJ ë°ì´í„°ê°€ ë¡œë“œë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤." << std::endl;
         glutSwapBuffers();
         return;
     }
 
-    glEnable(GL_DEPTH_TEST); // ±íÀÌ Å×½ºÆ® È°¼ºÈ­
+    // ì¹´ë©”ë¼ ìœ„ì¹˜ ì—…ë°ì´íŠ¸ (Yì¶• íšŒì „)
+    float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z); // XZ í‰ë©´ ê±°ë¦¬
+    cameraPos.x = r * glm::cos(cameraAngle);
+    cameraPos.z = r * glm::sin(cameraAngle);
+
+    glEnable(GL_DEPTH_TEST); // ê¹Šì´ í…ŒìŠ¤íŠ¸ í™œì„±í™”
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // ±íÀÌ ¹öÆÛ Å¬¸®¾î Ãß°¡
+    glEnable(GL_CULL_FACE); // ì€ë©´ ì œê±° í™œì„±í™”
+    glCullFace(GL_BACK); // ë’·ë©´ ì œê±° (ê¸°ë³¸ ì„¤ì •)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // ê¹Šì´ ë²„í¼ í´ë¦¬ì–´ ì¶”ê°€
 
     glUseProgram(shaderProgramID);
     glBindVertexArray(VAO);
 
-    // OBJ ¹öÅØ½º µ¥ÀÌÅÍ: À§Ä¡ (x,y,z) + »ö»ó (r,g,b) ÀÎÅÍ¸®ºê (°¢ ¸é »ö»ó ´Ù¸£°Ô)
+    // OBJ ë²„í…ìŠ¤ ë°ì´í„°: ìœ„ì¹˜ (x,y,z)ë§Œ (ìƒ‰ìƒì€ uniformìœ¼ë¡œ ì²˜ë¦¬)
     std::vector<GLfloat> vertexData;
-    // ¸é ¼ø¼­: back(0), left(1), top(2), right(3), bottom(4), front(5)
-    glm::vec3 colors[6] = {
-        glm::vec3(1.0f, 0.0f, 0.0f), // back: red
-        glm::vec3(0.0f, 1.0f, 0.0f), // left: green
-        glm::vec3(0.0f, 1.0f, 1.0f), // top: cyan
-        glm::vec3(1.0f, 1.0f, 0.0f), // right: yellow
-        glm::vec3(1.0f, 0.0f, 1.0f), // bottom: magenta
-        glm::vec3(1.0f, 0.5f, 0.0f)  // front: orange
-    };
-
-    // °¢ ¸éÀÇ »ö»óÀ» ¹öÅØ½º¿¡ Àû¿ë (OBJ ÀÎµ¦½º ±â¹İÀ¸·Î ±×·ìÈ­)
     for (size_t i = 0; i < model.vertex_count; ++i) {
         Vertex v = model.vertices[i];
-        // OBJ ÁÂÇ¥¸¦ OpenGL¿¡ ¸Â°Ô -1 ~ 1·Î ½ºÄÉÀÏ¸µ ¹× ¼¾ÅÍ¸µ (0~1 ¹üÀ§ °¡Á¤)
-        float x = (v.x - 0.5f) * 2.0f;
-        float y = (v.y - 0.5f) * 2.0f;
-        float z = (v.z - 0.5f) * 2.0f;
+        // OBJ ì¢Œí‘œë¥¼ OpenGLì— ë§ê²Œ ì‚¬ìš© (ìŠ¤ì¼€ì¼ë§ ì œê±°, 0~1 ë²”ìœ„ ê·¸ëŒ€ë¡œ)
+        float x = v.x;
+        float y = v.y;
+        float z = v.z;
         vertexData.push_back(x);
         vertexData.push_back(y);
         vertexData.push_back(z);
-        // °£´ÜÈ÷ ¹öÅØ½º ÀÎµ¦½º ±â¹İÀ¸·Î »ö»ó ÇÒ´ç (½ÇÁ¦·Î´Â ¸é ±×·ìÈ­ ÇÊ¿äÇÏÁö¸¸, µ¥¸ğ¿ëÀ¸·Î ·£´ı/°íÁ¤)
-        // ¿©±â¼­´Â ¸ğµç ¹öÅØ½º¿¡ »¡°­À¸·Î (ÀÌÀü ±âº»Ã³·³), ¶Ç´Â i % 6À¸·Î »ö»ó º¯°æ
-        int faceIdx = i % 6;
-        vertexData.push_back(colors[faceIdx].r);
-        vertexData.push_back(colors[faceIdx].g);
-        vertexData.push_back(colors[faceIdx].b);
     }
 
-    // ÀÎµ¦½º µ¥ÀÌÅÍ
+    // ì¸ë±ìŠ¤ ë°ì´í„° (ì´ 36 indices, 12 faces * 3)
     std::vector<GLuint> indices;
     for (size_t i = 0; i < model.face_count; ++i) {
         indices.push_back(model.faces[i].v1);
@@ -217,51 +210,84 @@ void DrawScene() {
         indices.push_back(model.faces[i].v3);
     }
 
-    // VBO¿¡ ¹öÅØ½º µ¥ÀÌÅÍ ¾÷·Îµå
+    // VBOì— ìœ„ì¹˜ ë°ì´í„°ë§Œ ì—…ë¡œë“œ
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(GLfloat), vertexData.data(), GL_DYNAMIC_DRAW);
 
-    // EBO¿¡ ÀÎµ¦½º µ¥ÀÌÅÍ ¾÷·Îµå
+    // EBOì— ì¸ë±ìŠ¤ ë°ì´í„° ì—…ë¡œë“œ
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_DYNAMIC_DRAW);
 
-    // Uniform ¸ÅÆ®¸¯½º ¼³Á¤
+    // Uniform ë§¤íŠ¸ë¦­ìŠ¤ ì„¤ì •
     GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
     GLint viewLoc = glGetUniformLocation(shaderProgramID, "view");
     GLint projLoc = glGetUniformLocation(shaderProgramID, "proj");
+    GLint faceColorLoc = glGetUniformLocation(shaderProgramID, "faceColor");
 
-    glm::mat4 modelMat = glm::mat4(1.0f); // ¸ğµ¨ ¸ÅÆ®¸¯½º (È¸Àü ¾øÀ½)
-    // ´ë°¢¼± ºä: Ä«¸Ş¶ó¸¦ (5, 5, 5) À§Ä¡·Î ÇØ¼­ Å¥ºê¿Í Ãà Àß º¸ÀÌ°Ô
-    glm::mat4 view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // ºä ¸ÅÆ®¸¯½º
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); // ÇÁ·ÎÁ§¼Ç ¸ÅÆ®¸¯½º
+    // ëª¨ë¸ ë§¤íŠ¸ë¦­ìŠ¤: ì´ë™ + íšŒì „ ì ìš© (íšŒì „ì€ ì´ë™ í›„ ì ìš©ë˜ë„ë¡ ìˆœì„œ ì£¼ì˜)
+    glm::mat4 modelMat = glm::mat4(1.0f);
+    modelMat = glm::translate(modelMat, modelPos);  // ë¨¼ì € ì´ë™ ì ìš©
+    modelMat = glm::rotate(modelMat, modelRotY, glm::vec3(0.0f, 1.0f, 0.0f));  // Yì¶• íšŒì „
+    modelMat = glm::rotate(modelMat, modelRotX, glm::vec3(1.0f, 0.0f, 0.0f));  // Xì¶• íšŒì „
+    //--------------------------------------------------------------------------
+    // ëŒ€ê°ì„  ë·°: ì¹´ë©”ë¼ë¥¼ (-5, 5, 5) ìœ„ì¹˜ë¡œ í•´ì„œ íë¸Œì™€ ì¶• ì˜ ë³´ì´ê²Œ
+    glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // ë·° ë§¤íŠ¸ë¦­ìŠ¤
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); // í”„ë¡œì ì…˜ ë§¤íŠ¸ë¦­ìŠ¤
 
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-    // OBJ Å¥ºê ±×¸®±â (»ï°¢Çü ¸ğµå)
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
-
-    // XYZ Ãà ±×¸®±â (5,5,5±îÁö ¼±À¸·Î, Å¥ºê À§¿¡ ¿À¹ö·¹ÀÌ)
-    std::vector<GLfloat> axesData = {
-        // XÃà: »¡°­
-        -5.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // ¿øÁ¡
-        5.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f,  // X ³¡
-
-        // YÃà: ³ì»ö
-        0.0f, -5.0f, 0.0f,  0.0f, 1.0f, 0.0f,  // ¿øÁ¡
-        0.0f, 5.0f, 0.0f,  0.0f, 1.0f, 0.0f,  // Y ³¡
-
-        // ZÃà: ÆÄ¶û
-        0.0f, 0.0f, -5.0f,  0.0f, 0.0f, 1.0f,  // ¿øÁ¡
-        0.0f, 0.0f, 5.0f,  0.0f, 0.0f, 1.0f   // Z ³¡
+    // ë©´ ìƒ‰ìƒ ë°°ì—´ (OBJ face ìˆœì„œì— ë§ì¶° 6ë©´ ê·¸ë£¹í™”: ê° ë©´ 2 faces = 6 indices)
+    glm::vec3 colors[6] = {
+        glm::vec3(1.0f, 0.0f, 0.0f), // 0: back (faces 0-1)
+        glm::vec3(0.0f, 1.0f, 0.0f), // 1: front? (faces 2-3) - ì‹¤ì œ OBJì— ë§ì¶° ì¡°ì • ê°€ëŠ¥
+        glm::vec3(0.0f, 1.0f, 1.0f), // 2: top (faces 4-5)
+        glm::vec3(1.0f, 1.0f, 0.0f), // 3: bottom (faces 6-7)
+        glm::vec3(1.0f, 0.0f, 1.0f), // 4: left (faces 8-9)
+        glm::vec3(1.0f, 0.5f, 0.0f)  // 5: right (faces 10-11)
     };
 
-    // VBO¿¡ Ãà µ¥ÀÌÅÍ ¾÷·Îµå (Å¥ºê µ¥ÀÌÅÍ µ¤¾î¾²±â, ÇÏÁö¸¸ ¹è¿­ ¸ğµå·Î ±×¸®±â)
+    // ê° ë©´(6 indices)ë§ˆë‹¤ ìƒ‰ìƒ uniform ì„¤ì • í›„ ê·¸ë¦¬ê¸°
+    for (int face = 0; face < 6; ++face) {
+        int startIdx = face * 6; // ê° ë©´ 6 indices (2 tris * 3)
+        glUniform3f(faceColorLoc, colors[face].r, colors[face].g, colors[face].b);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
+    }
+	//---------------------------------------------------------------------------
+    // XYZ ì¶• ê·¸ë¦¬ê¸° ì „ì— ëª¨ë¸ ë§¤íŠ¸ë¦­ìŠ¤ë¥¼ ë‹¨ìœ„ í–‰ë ¬ë¡œ ì¬ì„¤ì • (ì¶•ì€ ê³ ì •ë˜ê²Œ í•¨)
+    glm::mat4 axisModelMat = glm::mat4(1.0f);  // ë‹¨ìœ„ í–‰ë ¬ (ì´ë™/íšŒì „ ì—†ìŒ)
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(axisModelMat));
+
+    // XYZ ì¶• ê·¸ë¦¬ê¸° (íë¸Œì™€ ë³„ë„ë¡œ, ìœ„ì¹˜ë§Œ ì—…ë¡œë“œí•˜ê³  ìƒ‰ìƒ uniformìœ¼ë¡œ ë¹¨ê°•/ë…¹ìƒ‰/íŒŒë‘)
+    std::vector<GLfloat> axesData = {
+        // Xì¶•
+        -5.0f, 0.0f, 0.0f,  // ì‹œì‘
+         5.0f, 0.0f, 0.0f,  // ë
+
+         // Yì¶•
+          0.0f,-5.0f, 0.0f,
+          0.0f, 5.0f, 0.0f,
+
+          // Zì¶•
+           0.0f, 0.0f,-5.0f,
+           0.0f, 0.0f, 5.0f
+    };
+
+    // ì¶•ìš© VBO ì—…ë¡œë“œ (ìœ„ì¹˜ë§Œ, ìƒ‰ìƒ uniform ì‚¬ìš©)
     glBufferData(GL_ARRAY_BUFFER, axesData.size() * sizeof(GLfloat), axesData.data(), GL_DYNAMIC_DRAW);
 
-    // Ãà ±×¸®±â (¶óÀÎ ¸ğµå, EBO ¹«½Ã)
-    glDrawArrays(GL_LINES, 0, 6);
+    // Xì¶•
+    glUniform3f(faceColorLoc, 1.0f, 0.0f, 0.0f);
+    glDrawArrays(GL_LINES, 0, 2);
+
+    // Yì¶• 
+    glUniform3f(faceColorLoc, 0.0f, 0.0f, 1.0f);
+    glDrawArrays(GL_LINES, 2, 2);
+
+    // Zì¶• 
+    glUniform3f(faceColorLoc, 0.0f, 1.0f, 0.0f);
+    glDrawArrays(GL_LINES, 4, 2);
 
     glBindVertexArray(0);
     glutSwapBuffers();
@@ -277,6 +303,52 @@ void Mouse(int button, int state, int x, int y) {
 
 }
 
-void Keyboard(unsigned char key, int x, int y) {
+void Keyboard(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+    case 'a': //ì¹´ë©”ë¼ë¥¼ Yì¶• ì¤‘ì‹¬ìœ¼ë¡œ íšŒì „ 
+        cameraAngle += 0.1f; // ê°ë„ ì¦ê°€ (ë¼ë””ì•ˆ)
+        break;
+    case 'd':
+        cameraAngle -= 0.1f; // ê°ë„ ê°ì†Œ (ë¼ë””ì•ˆ)
+        break;
+    case 'w': // ë„í˜•ì„ Zì¶• ë°©í–¥ìœ¼ë¡œ ì•ìœ¼ë¡œ ì´ë™ (íë¸Œë¥¼ ì¹´ë©”ë¼ ìª½ìœ¼ë¡œ)
+        modelPos.z += 0.1f;  // Z ì¦ê°€ (ì•ìœ¼ë¡œ)
+        break;
+    case 's': // ë„í˜•ì„ Zì¶• ë°©í–¥ìœ¼ë¡œ ë’¤ë¡œ ì´ë™
+        modelPos.z -= 0.1f;  // Z ê°ì†Œ (ë’¤ë¡œ)
+        break;
+    case 'q':
+        exit(0);
+        break;
+    default:
+        break;
+    }
 
+    glutPostRedisplay();
+}
+
+// íŠ¹ìˆ˜ í‚¤(í™”ì‚´í‘œ) ì²˜ë¦¬ í•¨ìˆ˜: ë„í˜• íšŒì „
+void SpecialKeyboard(int key, int x, int y)
+{
+    switch (key)
+    {
+    case GLUT_KEY_UP:    // ìœ„ í™”ì‚´í‘œ: Xì¶•ìœ¼ë¡œ ë„í˜• íšŒì „ (ìœ„ë¡œ ê¸°ìš¸ì„)
+        modelRotX += 0.1f;  // Xì¶• íšŒì „ ì¦ê°€
+        break;
+    case GLUT_KEY_DOWN:  // ì•„ë˜ í™”ì‚´í‘œ: Xì¶•ìœ¼ë¡œ ë„í˜• íšŒì „ (ì•„ë˜ë¡œ ê¸°ìš¸ì„)
+        modelRotX -= 0.1f;
+        break;
+    case GLUT_KEY_LEFT:  // ì™¼ìª½ í™”ì‚´í‘œ: Yì¶•ìœ¼ë¡œ ë„í˜• ì¢ŒíšŒì „
+        modelRotY += 0.1f;  // Yì¶• íšŒì „ ì¦ê°€
+        break;
+    case GLUT_KEY_RIGHT: // ì˜¤ë¥¸ìª½ í™”ì‚´í‘œ: Yì¶•ìœ¼ë¡œ ë„í˜• ìš°íšŒì „
+        modelRotY -= 0.1f;  // Yì¶• íšŒì „ ê°ì†Œ
+        break;
+    default:
+        break;
+    }
+
+    glutPostRedisplay();  // ì¬ë Œë”ë§ ìš”ì²­
 }
