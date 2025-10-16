@@ -90,14 +90,17 @@
     <ClCompile Include="S14.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
-    <ClCompile Include="Prac2.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="ObjRead.h">
       <Filter>헤더 파일</Filter>
     </ClCompile>
     <ClCompile Include="ObjRead.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="S15.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S16.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -111,5 +114,6 @@
   <ItemGroup>
     <None Include="vertex.glsl" />
     <None Include="fragment.glsl" />
+    <None Include="vertex3D.glsl" />
   </ItemGroup>
 </Project>

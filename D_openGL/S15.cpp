@@ -22,22 +22,33 @@ GLuint axisVAO, axisVBO;  // 축 그리기용 별도 VAO/VBO 추가
 
 Model model;
 int facenum = 0;  // 초기값 0으로 변경 (-1에서 0으로)
+int endfacenum = 0; // endfacenum 변수 추가
 int modelType = 1; // 0: Cube, 1: Cone
 bool allFaceDraw = true; // true: 전체 면 그리기, false: 한 면씩 그리기
-
+bool randomFace = false; // true: 랜덤 면 그리기, false: 순차 면 그리기
 glm::vec3 cameraPos = glm::vec3(5.0f, 5.0f, 5.0f);
 float cameraAngle = glm::atan(1.0f); // 초기 각도 (45도 라디안)
 float targetCameraAngle = glm::atan(1.0f); // 타겟 카메라 각도
 
 // 도형(모델) 이동 및 회전 관련 추가 전역 변수
-glm::vec3 modelPos = glm::vec3(0.0f, 0.0f, 0.0f);  // 도형 위치 (X, Y, Z 이동량)
-glm::vec3 targetModelPos = glm::vec3(0.0f, 0.0f, 0.0f); // 타겟 도형 위치
+glm::vec3 modelPos = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 targetModelPos = glm::vec3(0.0f, 0.0f, 0.0f);
 float modelRotY = 0.0f;  // Y축 회전 각도 (라디안)
 float targetModelRotY = 0.0f; // 타겟 Y축 회전 각도
 float modelRotX = 0.0f;  // X축 회전 각도 (라디안)
 float targetModelRotX = 0.0f; // 타겟 X축 회전 각도
 
 float interpSpeed = 10.0f; // 선형 보간 속도
+
+glm::vec4 lAmb = glm::vec4(0.1, 0.3, 0.2, 1);	//빛의 ambient 값
+glm::vec4 lDif = glm::vec4(0.3, 0.5, 0.3, 1);	//빛의 diffuse 값
+glm::vec4 lSpc = glm::vec4(1, 1, 1, 1);		//빛의 specular 값
+
+//float spec = ?f; // 재질의 specular 강도 (0~1)
+glm::vec4 mAmb = glm::vec4(0.1, 0.4, 0.1, 1);	//재질의 ambient 값
+glm::vec4 mDif = glm::vec4(0.8, 0.8, 0.8, 1);	//재질의 diffuse 값
+//gllm::vec4 mSpc = glm::vec4(spec, spec, spec, 1);	//재질의 specular 값
+float mShininess = 50.0f; // 재질의 sh값(게임수학)
 
 int main(int argc, char** argv) {
 	srand(static_cast<unsigned>(time(0))); // 랜덤 시드 초기화
@@ -91,7 +102,7 @@ void LoadOBJ(const char* filename) {
 }
 
 void MakeVertexShaders() {
-	GLchar* vertexSource = filetobuf("vertex.glsl");
+	GLchar* vertexSource = filetobuf("vertex3D.glsl");
 	if (!vertexSource) {
 		std::cerr << "ERROR: vertex.glsl 파일을 읽지 못했습니다." << std::endl;
 		return;
@@ -248,7 +259,7 @@ void DrawScene() {
 	modelMat = glm::rotate(modelMat, modelRotX, glm::vec3(1.0f, 0.0f, 0.0f));  // X축 회전
 	//--------------------------------------------------------------------------
 	// Camera (View) 및 Projection 매트릭스 설정
-	glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // 뷰 매트릭스
+	glm::mat4 view = glm::lookAt(cameraPos, modelPos, glm::vec3(0.0f, 1.0f, 0.0f)); // 뷰 매트릭스
 	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); // 프로젝션 매트릭스
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
@@ -276,11 +287,17 @@ void DrawScene() {
 			}
 		}
 		else {
-			if (facenum < 0 || facenum >= 6) facenum = 0;
-			int startIdx = facenum * 6;
-			glUniform3f(faceColorLoc, colors[facenum].r, colors[facenum].g, colors[facenum].b);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
-		}
+			int first = facenum * 6;
+			glm::vec3 color = colors[facenum % 6];
+			glUniform3f(faceColorLoc, color.r, color.g, color.b);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(first * sizeof(GLuint)));
+			int second = endfacenum * 6;
+			color = colors[endfacenum % 6];
+			glUniform3f(faceColorLoc, color.r, color.g, color.b);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(second * sizeof(GLuint)));
+
+
+						}
 	}
 	else if (modelType == 1) {  // 콘: face_count faces, 각 3 indices
 		if (allFaceDraw) {
@@ -291,12 +308,17 @@ void DrawScene() {
 				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
 			}
 		}
-		else {
-			if (facenum < 0 || facenum >= static_cast<int>(model.face_count)) facenum = 0;
-			int startIdx = facenum * 3;
+		else
+		{
+			int first = facenum * 3;
 			glm::vec3 color = colors[facenum % 6];
 			glUniform3f(faceColorLoc, color.r, color.g, color.b);
-			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(first * sizeof(GLuint)));
+			int second = endfacenum * 3;
+			color = colors[endfacenum % 6];
+			glUniform3f(faceColorLoc, color.r, color.g, color.b);
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(second * sizeof(GLuint)));
+
 		}
 	}
 
@@ -306,7 +328,6 @@ void DrawScene() {
 	// XYZ 축 그리기 (별도 VAO 사용)
 	glm::mat4 axisModelMat = glm::mat4(1.0f);
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(axisModelMat));
-
 	std::vector<GLfloat> axesData = {
 		// X축
 		-5.0f, 0.0f, 0.0f,  // 시작
@@ -369,29 +390,78 @@ void Keyboard(unsigned char key, int x, int y)
 		break;
 	case '1':
 		facenum = 0;
+		endfacenum = 0;
 		break;
 	case '2':
 		facenum = 1;
+		endfacenum = 1;
 		break;
 	case '3':
 		facenum = 2;
+		endfacenum = 2;
 		break;
 	case '4':
 		facenum = 3;
+		endfacenum = 3;
 		break;
 	case '5':
 		facenum = 4;
+		endfacenum = 4;
 		break;
 	case '6':
 		facenum = 5;
+		endfacenum = 5;
+		break;
+	case 'c':
+		// 육면체에서 랜덤한 면 두개 
+		if (modelType == 0) {
+			randomFace = !randomFace;
+			int first = rand() % 6;
+			int second = rand() % 6;
+			while (second == first) {
+				second = rand() % 6;
+			}
+			if (first < second) {
+				facenum = first;
+				endfacenum = second;
+			}
+			else {
+				facenum = second;
+				endfacenum = first;
+			}
+		}
+		break;
+	case 't':
+		// 사각뿔에서 랜덤한 면 두개 (측면 0~3 가정)
+		if (modelType == 1) {
+			randomFace = !randomFace;
+			int first = rand() % 4;
+			int second = rand() % 4;
+			while (second == first) {
+				second = rand() % 4;
+			}
+			if (first < second) {
+				facenum = first;
+				endfacenum = second;
+			}
+			else {
+				facenum = second;
+				endfacenum = first;
+			}
+		}
 		break;
 	case 'o': // 전체 면 그리기 모드
 		allFaceDraw = !allFaceDraw;
 		break;
-	case 'g':
-		cameraPos.x += 10.0f; // 카메라 X축으로 오른쪽 이동
-		cameraPos.y += 10.0f;
-		cameraPos.z += 10.0f;
+	case '=':
+		cameraPos.x -= 1.0f;
+		cameraPos.y -= 1.0f;
+		cameraPos.z -= 1.0f;
+		break;
+	case '-':
+		cameraPos.x += 1.0f;
+		cameraPos.y += 1.0f;
+		cameraPos.z += 1.0f;
 		break;
 	case 'p':
 		modelType = (modelType + 1) % 2; // 0과 1 사이 토글

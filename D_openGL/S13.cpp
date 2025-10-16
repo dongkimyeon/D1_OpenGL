@@ -540,6 +540,9 @@ void Keyboard(unsigned char key, int x, int y) {
         }
         break;
     }
+    case 'q':
+        exit(0);
+		break;
     default:
         break;
     }

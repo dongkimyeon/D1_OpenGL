@@ -1,14 +1,16 @@
 #version 330 core
-layout(location = 0) in vec3 aPos;
+layout(location = 0) in vec2 aPos; //0 ~ 8????????? ?????
+layout(location = 1) in vec3 aColor; //8????????? 16 ????????? 
 
 out vec3 ourColor;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
-uniform vec3 faceColor;
+
+
 
 void main() {
-    gl_Position = proj * view * model * vec4(aPos, 1.0);
-    ourColor = faceColor;
+
+   
+    gl_Position = vec4(aPos, 0.0, 1.0);
+    ourColor = aColor;
+
 }
