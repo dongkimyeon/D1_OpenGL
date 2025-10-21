@@ -29,7 +29,7 @@ std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
 
 Model model;
 glm::vec3 modelCenter = glm::vec3(0.0f); // 모델 중심 추가
-int modelType = 1; // 0: Cube, 1: Cone
+int modelType = 0; // 0: Cube, 1: Cone
 
 float rotateAngle = 0.0f;
 bool backfaceCulling = false; // 뒷면 제거 모드 여부
@@ -595,9 +595,8 @@ void Keyboard(unsigned char key, int x, int y)
 		r_time = 0.0f;
 		r_Flag = !r_Flag;
 		break;
-	case 'p':
-		modelType = (modelType + 1) % 2; // 0과 1 사이 토글
-		LoadOBJ(modelType == 0 ? "cube.obj" : "cone.obj"); // 모델 재로드
+	case 'c':
+		LoadOBJ("cube.obj");
 		// 색상 재초기화
 		vertexColors.resize(model.vertex_count);
 		for (size_t i = 0; i < model.vertex_count; ++i) {
@@ -608,6 +607,11 @@ void Keyboard(unsigned char key, int x, int y)
 		}
 		glDeleteBuffers(1, &VBO);
 		glDeleteBuffers(1, &EBO);
+		InitBuffers();
+		break;
+	case 'p':
+		modelType = (modelType + 1) % 2; // 0과 1 사이 토글
+		LoadOBJ(modelType == 0 ? "cube.obj" : "cone.obj"); // 모델 재로드
 		InitBuffers();
 		break;
 	case 'q':
