@@ -18,8 +18,6 @@ void UpdateModelBuffers();
 bool LoadFBX(const char* filename); // FBX 로드 함수 
 glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices); // 센터 계산 
 
-void ProcessNode(aiNode* node, int depth);
-
 // 전역 변수
 GLint width = 1280, height = 720;
 GLuint shaderProgramID, vertexShader, fragmentShader;
@@ -83,7 +81,7 @@ int main(int argc, char** argv) {
     InitBuffers();
 
     // 초기 FBX 로드 (예시 파일)
-    if (!LoadFBX("SK_West_Heli_AH64D.FBX")) {
+    if (!LoadFBX("Blade.FBX")) {
         std::cerr << "초기 FBX 로드 실패. 파일을 확인하세요." << std::endl;
     }
     Time::Initialize();
@@ -253,7 +251,7 @@ void UpdateModelBuffers()
 bool LoadFBX(const char* filename) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(filename,
-        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals);
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Assimp 로드 실패: " << importer.GetErrorString() << std::endl;
@@ -265,11 +263,6 @@ bool LoadFBX(const char* filename) {
     fbxModel.indices.clear();
     fbxModel.loaded = false;
 
-     // --- 골격(Bone) 구조 출력 ---
-    std::cout << "\n--- FBX Node/Skeleton Hierarchy ---" << std::endl;
-    // aiScene의 루트 노드부터 재귀적으로 노드 계층 구조를 출력합니다.
-    ProcessNode(scene->mRootNode, 0);
-    std::cout << "-----------------------------------" << std::endl;
     // 모든 메쉬를 순회하며 데이터를 병합합니다.
     for (unsigned int m = 0; m < scene->mNumMeshes; m++) {
         aiMesh* mesh = scene->mMeshes[m];
@@ -317,25 +310,6 @@ glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices) {
     }
     center /= static_cast<float>(vertices.size());
     return center;
-}
-
-void ProcessNode(aiNode* node, int depth)
-{
-    // 들여쓰기를 위한 문자열 생성
-    std::string indent(depth * 2, ' ');
-
-    // 노드 이름 출력
-    std::cout << indent << "Node Name: " << node->mName.C_Str();
-
-    // 이 노드가 특정 메쉬의 뼈(Bone) 이름과 일치하는지 확인하는 로직을 추가할 수 있습니다.
-    // 여기서는 간단하게 노드의 이름만 출력합니다. (대부분의 뼈가 노드 이름으로 존재합니다)
-    std::cout << std::endl;
-
-    // 모든 자식 노드에 대해 재귀적으로 처리
-    for (unsigned int i = 0; i < node->mNumChildren; i++)
-    {
-        ProcessNode(node->mChildren[i], depth + 1);
-    }
 }
 
 void DrawScene() 
