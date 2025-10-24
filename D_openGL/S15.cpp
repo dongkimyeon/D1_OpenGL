@@ -40,15 +40,7 @@ float targetModelRotX = 0.0f; // 타겟 X축 회전 각도
 
 float interpSpeed = 10.0f; // 선형 보간 속도
 
-glm::vec4 lAmb = glm::vec4(0.1, 0.3, 0.2, 1);	//빛의 ambient 값
-glm::vec4 lDif = glm::vec4(0.3, 0.5, 0.3, 1);	//빛의 diffuse 값
-glm::vec4 lSpc = glm::vec4(1, 1, 1, 1);		//빛의 specular 값
 
-//float spec = ?f; // 재질의 specular 강도 (0~1)
-glm::vec4 mAmb = glm::vec4(0.1, 0.4, 0.1, 1);	//재질의 ambient 값
-glm::vec4 mDif = glm::vec4(0.8, 0.8, 0.8, 1);	//재질의 diffuse 값
-//gllm::vec4 mSpc = glm::vec4(spec, spec, spec, 1);	//재질의 specular 값
-float mShininess = 50.0f; // 재질의 sh값(게임수학)
 
 int main(int argc, char** argv) {
 	srand(static_cast<unsigned>(time(0))); // 랜덤 시드 초기화
@@ -258,7 +250,7 @@ void DrawScene() {
 	modelMat = glm::rotate(modelMat, modelRotY, glm::vec3(0.0f, 1.0f, 0.0f));  // Y축 회전
 	modelMat = glm::rotate(modelMat, modelRotX, glm::vec3(1.0f, 0.0f, 0.0f));  // X축 회전
 	//--------------------------------------------------------------------------
-	// Camera (View) 및 Projection 매트릭스 설정
+	// Camera (View) 및 Projection 매트릭스 설정 
 	glm::mat4 view = glm::lookAt(cameraPos, modelPos, glm::vec3(0.0f, 1.0f, 0.0f)); // 뷰 매트릭스
 	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); // 프로젝션 매트릭스
 

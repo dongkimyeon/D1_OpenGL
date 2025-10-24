@@ -111,6 +111,12 @@
     <ClCompile Include="S19.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="S20.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="stdShaderCode.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
