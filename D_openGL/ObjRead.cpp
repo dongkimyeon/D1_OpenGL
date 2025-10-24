@@ -1,11 +1,11 @@
 #include "ObjRead.h"
 
-void read_newline(char* str) {
+void read_newline(char* str)
+{
     char* pos;
     if ((pos = strchr(str, '\n')) != NULL)
         *pos = '\0';
 }
-
 void read_obj_file(const char* filename, Model* model) {
     FILE* file;
     errno_t err = fopen_s(&file, filename, "r");
