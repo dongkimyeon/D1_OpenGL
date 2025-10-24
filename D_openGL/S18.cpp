@@ -52,7 +52,9 @@ GLuint axisVAO, axisVBO;  // 축 그리기용 별도 VAO/VBO
 
 ExtendedModel cubeModel;
 ExtendedModel sphereModel;
+ExtendedModel conModel;
 
+bool c_Flag = false; // 축 표시 여부
 // 객체 선택 및 변환 상태
 int selectedObject = 3; // 1: 큐브만, 2: 구만, 3: 둘 다
 float cubeXRotation = 0.0f;
@@ -110,6 +112,7 @@ int main(int argc, char** argv) {
 	// OBJ 파일 로드
 	LoadOBJ("cube.obj", &cubeModel.baseModel);
 	LoadOBJ("sphere.obj", &sphereModel.baseModel);
+	
 
 	// 정규 직교 기저 초기화
 	InitializeOrthonormalBasis(&cubeModel);
@@ -125,19 +128,6 @@ int main(int argc, char** argv) {
 
 	glutMainLoop();
 	return 0;
-}
-
-void LoadOBJ(const char* filename, Model* model) {
-	read_obj_file(filename, model);
-	if (model->vertex_count == 0 || model->face_count == 0) {
-		std::cerr << "OBJ 로드 실패: " << filename << std::endl;
-		return;
-	}
-
-	// 모델의 pivot을 중심점으로 조정
-	CenterModelPivot(model);
-
-	std::cout << "OBJ 로드 완료: " << model->vertex_count << " 버텍스, " << model->face_count << " 페이스" << std::endl;
 }
 
 glm::vec3 CalculateModelCenter(const Model& model) {
@@ -434,7 +424,7 @@ void DrawScene() {
 	cubeBasis.up = cubeRotationMat * cubeBasis.up;
 	cubeBasis.forward = cubeRotationMat * cubeBasis.forward;
 	cubeBasis.origin = cubeWorldPos; // 큐브의 실제 월드 좌표 중심
-	DrawBasis(cubeBasis, 1.0f); // 큐브 내부에 맞게 크기 조정
+	//DrawBasis(cubeBasis, 1.0f); // 큐브 내부에 맞게 크기 조정
 
 	// 구의 정규 직교 기저 (구 내부 중심에 표시)
 	glm::vec3 sphereWorldPos = glm::vec3(sphereModelMat * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -450,7 +440,7 @@ void DrawScene() {
 	sphereBasis.up = sphereRotationMat * sphereBasis.up;
 	sphereBasis.forward = sphereRotationMat * sphereBasis.forward;
 	sphereBasis.origin = sphereWorldPos; // 구의 실제 월드 좌표 중심
-	DrawBasis(sphereBasis, 1.0f); // 구 내부에 맞게 크기 조정
+	//DrawBasis(sphereBasis, 1.0f); // 구 내부에 맞게 크기 조정
 
 	// 전역 XYZ 축 그리기
 	glm::mat4 axisModelMat = glm::mat4(1.0f);
@@ -485,6 +475,19 @@ void Reshape(int w, int h) {
 
 void Mouse(int button, int state, int x, int y) {
 
+}
+
+void LoadOBJ(const char* filename, Model* model) {
+	read_obj_file(filename, model);
+	if (model->vertex_count == 0 || model->face_count == 0) {
+		std::cerr << "OBJ 로드 실패: " << filename << std::endl;
+		return;
+	}
+
+	// 모델의 pivot을 중심점으로 조정
+	CenterModelPivot(model);
+
+	std::cout << "OBJ 로드 완료: " << model->vertex_count << " 버텍스, " << model->face_count << " 페이스" << std::endl;
 }
 
 void Keyboard(unsigned char key, int x, int y) {
@@ -526,6 +529,7 @@ void Keyboard(unsigned char key, int x, int y) {
 		break;
 	case 's':
 		ResetToInitialState();
+		LoadOBJ("sphere.obj", &sphereModel.baseModel);
 		std::cout << "초기 상태로 리셋" << std::endl;
 		break;
 
@@ -694,7 +698,24 @@ void Keyboard(unsigned char key, int x, int y) {
 			std::cout << "Y축 아래로 이동" << std::endl;
 		}
 		break;
-
+	case 'c':
+		//도형 바꾸기 
+		c_Flag = !c_Flag;
+		if (c_Flag)
+		{
+			LoadOBJ("cone.obj", &cubeModel.baseModel);
+			LoadOBJ("cube.obj", &sphereModel.baseModel);
+			sphereScale = glm::vec3(1.0f);
+		}
+		else
+		{
+			LoadOBJ("cube.obj", &cubeModel.baseModel);
+			LoadOBJ("cone.obj", &sphereModel.baseModel);
+			sphereScale = glm::vec3(1.0f);
+		}
+		
+	
+		break;
 	default:
 		break;
 	}

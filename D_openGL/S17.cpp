@@ -27,6 +27,7 @@ std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<float> colorDist(0.0f, 1.0f);
 
+bool w_Flag = false;
 Model model;
 glm::vec3 modelCenter = glm::vec3(0.0f); // 모델 중심 추가
 int modelType = 0; // 0: Cube, 1: Cone
@@ -264,12 +265,20 @@ void DrawScene() {
 	cameraPos.x = r * glm::cos(cameraAngle);
 	cameraPos.z = r * glm::sin(cameraAngle);
 
-	glEnable(GL_DEPTH_TEST); // 깊이 테스트 활성화
+	if (w_Flag)
+	{
+		glDisable(GL_DEPTH_TEST);
+	}
+	else
+	{
+		glEnable(GL_DEPTH_TEST);
+	}
+	
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	if (backfaceCulling) //리버스 
 	{
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
+		//glCullFace(GL_FRONT);
 	}
 	else
 	{
@@ -613,6 +622,9 @@ void Keyboard(unsigned char key, int x, int y)
 		modelType = (modelType + 1) % 2; // 0과 1 사이 토글
 		LoadOBJ(modelType == 0 ? "cube.obj" : "cone.obj"); // 모델 재로드
 		InitBuffers();
+		break;
+	case 'w':
+		w_Flag = !w_Flag;
 		break;
 	case 'q':
 		exit(0);

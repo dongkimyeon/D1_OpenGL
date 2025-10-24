@@ -1,5 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "CommonInclude.h" // filetobuf 함수와 ObjRead.h 포함
+#include <vector>
+#include <cmath>
+
+using namespace std;
 
 // 함수 선언
 void MakeVertexShaders();
@@ -14,6 +18,8 @@ void SpecialKeyboard(int key, int x, int y); // 특수 키(화살표) 처리 함수 선언
 void LoadOBJ(const char* filename);
 void Timer(int value);
 glm::vec3 CalculateModelCenter(); // 모델 중심 계산 함수 선언
+void InitSpline(); // 스플라인 초기화 함수 선언
+glm::vec3 CatmullRomSpline(float t, const std::vector<glm::vec3>& points); // Catmull-Rom 스플라인 함수 선언
 
 
 bool reverseFlag = false; //도형 회전 방향
@@ -48,6 +54,12 @@ float modelRotX = 0.0f;  // X축 회전 각도 (라디안)
 float targetModelRotX = 0.0f; // 타겟 X축 회전 각도
 
 float interpSpeed = 10.0f; // 선형 보간 속도
+
+// Catmull-Rom 스플라인 관련 전역 변수
+bool cameraWalk = false; // 카메라 워크 토글
+float splineTime = 0.0f; // 스플라인 시간
+float splineSpeed = 1.0f; // 스플라인 속도
+std::vector<glm::vec3> controlPoints; // 제어점
 
 glm::vec4 lAmb = glm::vec4(0.1, 0.3, 0.2, 1);	//빛의 ambient 값
 glm::vec4 lDif = glm::vec4(0.3, 0.5, 0.3, 1);	//빛의 diffuse 값
@@ -88,6 +100,7 @@ int main(int argc, char** argv) {
 		LoadOBJ("cone.obj");
 
 	InitBuffers();
+	InitSpline(); // 스플라인 초기화
 
 	glutDisplayFunc(DrawScene);
 	glutReshapeFunc(Reshape);
@@ -98,6 +111,51 @@ int main(int argc, char** argv) {
 
 	glutMainLoop();
 	return 0;
+}
+
+void InitSpline() {
+	controlPoints = {
+		glm::vec3(5.0f, 2.0f, 5.0f),
+		glm::vec3(5.0f, 2.0f, -5.0f),
+		glm::vec3(-5.0f, 2.0f, -5.0f),
+		glm::vec3(-5.0f, 2.0f, 5.0f),
+		glm::vec3(0.0f, 6.0f, 0.0f)
+	};
+	std::cout << "Catmull-Rom 스플라인 제어점 초기화 완료" << std::endl;
+}
+
+glm::vec3 CatmullRomSpline(float t, const std::vector<glm::vec3>& points) {
+	size_t n = points.size();
+	if (n < 2) return points[0];
+
+	// Closed 스플라인을 위한 t 정규화 (0 ~ n)
+	t = std::fmod(t, static_cast<float>(n));
+	if (t < 0.0f) t += static_cast<float>(n);
+
+	int i = static_cast<int>(std::floor(t));
+	float u = t - static_cast<float>(i);
+
+	// 인덱스 모듈로 처리 (closed)
+	int idx0 = (i + n - 1) % n;
+	int idx1 = i % n;
+	int idx2 = (i + 1) % n;
+	int idx3 = (i + 2) % n;
+
+	glm::vec3 p0 = points[idx0];
+	glm::vec3 p1 = points[idx1];
+	glm::vec3 p2 = points[idx2];
+	glm::vec3 p3 = points[idx3];
+
+	// Catmull-Rom 베이시스 함수
+	float u2 = u * u;
+	float u3 = u2 * u;
+
+	glm::vec3 a = 0.5f * (2.0f * p1);
+	glm::vec3 b = 0.5f * (-p0 + p2);
+	glm::vec3 c = 0.5f * (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3);
+	glm::vec3 d = 0.5f * (-p0 + 3.0f * p1 - 3.0f * p2 + p3);
+
+	return a + b * u + c * u2 + d * u3;
 }
 
 void LoadOBJ(const char* filename) {
@@ -229,11 +287,6 @@ void DrawScene() {
 		return;
 	}
 
-	// 카메라 위치 업데이트
-	float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z); // XZ 평면 거리
-	cameraPos.x = r * glm::cos(cameraAngle);
-	cameraPos.z = r * glm::sin(cameraAngle);
-
 	glEnable(GL_DEPTH_TEST); // 깊이 테스트 활성화
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	if (backfaceCulling) //리버스 
@@ -306,7 +359,7 @@ void DrawScene() {
 
 	//--------------------------------------------------------------------------
 	// Camera (View) 및 Projection 매트릭스 설정
-	glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // 뷰 매트릭스
+	glm::mat4 view = glm::lookAt(cameraPos, modelCenter, glm::vec3(0.0f, 1.0f, 0.0f)); // 뷰 매트릭스 (타겟을 modelCenter로 변경)
 	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); // 프로젝션 매트릭스
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
@@ -413,11 +466,15 @@ void Keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 'd':
-		targetCameraAngle -= glm::radians(5.0f); // 카메라 각도 5도 감소
+		if (!cameraWalk) {
+			targetCameraAngle -= glm::radians(5.0f); // 카메라 각도 5도 감소
+		}
 		break;
 	case 'a':
-		targetCameraAngle += glm::radians(5.0f); // 카메라 각도 5도 증가
-		break;;
+		if (!cameraWalk) {
+			targetCameraAngle += glm::radians(5.0f); // 카메라 각도 5도 증가
+		}
+		break;
 	case 'w':
 		wireMode = !wireMode;
 		return;
@@ -448,6 +505,16 @@ void Keyboard(unsigned char key, int x, int y)
 		glDeleteBuffers(1, &EBO);
 		InitBuffers();  // 모델 버퍼 재초기화 (축은 유지)
 		break;
+	case 'c': // 'c' 키로 카메라 워크 토글
+		cameraWalk = !cameraWalk;
+		if (cameraWalk) {
+			splineTime = 0.0f; // 재시작
+			std::cout << "카메라 워크 시작 (Catmull-Rom 스플라인)" << std::endl;
+		}
+		else {
+			std::cout << "카메라 워크 중지" << std::endl;
+		}
+		break;
 	case 'x':
 		xRotateFlag = !xRotateFlag;
 		reverseFlag = true;
@@ -455,12 +522,12 @@ void Keyboard(unsigned char key, int x, int y)
 	case 'X':
 		xRotateFlag = !xRotateFlag;
 		reverseFlag = false;
-	
+
 		break;
 	case 'y':
 		yRotateFlag = !yRotateFlag;
 		reverseFlag = true;
-	
+
 		break;
 	case 'Y':
 		yRotateFlag = !yRotateFlag;
@@ -469,7 +536,7 @@ void Keyboard(unsigned char key, int x, int y)
 	case 's':
 		targetModelPos = glm::vec3(0.0f, 0.0f, 0.0f); // 원점으로 이동
 		stopFlag = !stopFlag;
-		break;	
+		break;
 	case 'q':
 		exit(0);
 		break;
@@ -507,11 +574,21 @@ void SpecialKeyboard(int key, int x, int y)
 void Timer(int value) {
 	float delta = 1.0f / 60.0f; // 고정 타임스텝 (~60 FPS)
 
-	// 선형 보간으로 부드럽게 업데이트
-	modelPos = glm::mix(modelPos, targetModelPos, interpSpeed * delta);
+	// 카메라 업데이트
+	if (cameraWalk) {
+		splineTime += delta * splineSpeed;
+		
+		cameraPos = CatmullRomSpline(splineTime, controlPoints);
+	}
+	else {
+		// 기존 각도 기반 카메라 업데이트
+		cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
+		float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z);
+		cameraPos.x = r * glm::cos(cameraAngle);
+		cameraPos.z = r * glm::sin(cameraAngle);
+	}
 
-	cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
-	if(stopFlag)
+	if (stopFlag)
 	{
 		xRotateFlag = false;
 		yRotateFlag = false;
@@ -528,6 +605,7 @@ void Timer(int value) {
 		else
 			targetModelRotY -= 0.05f;
 	}
+	modelPos = glm::mix(modelPos, targetModelPos, interpSpeed * delta);
 	modelRotX = glm::mix(modelRotX, targetModelRotX, interpSpeed * delta);
 	modelRotY = glm::mix(modelRotY, targetModelRotY, interpSpeed * delta);
 	glutPostRedisplay();
