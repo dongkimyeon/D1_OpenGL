@@ -1,9 +1,9 @@
-#define _CRT_SECURE_NO_WARNINGS
+ï»¿#define _CRT_SECURE_NO_WARNINGS
 #pragma once
 #include "CommonInclude.h" 
 #include "Time.h"
 
-// ÇÔ¼ö ¼±¾ğ
+// í•¨ìˆ˜ ì„ ì–¸
 void MakeVertexShaders();
 void MakeFragmentShaders();
 GLuint MakeShaderProgram();
@@ -15,36 +15,41 @@ void Mouse(int button, int state, int x, int y);
 void Motion(int x, int y);
 void Timer(int value);
 void UpdateModelBuffers();
-bool LoadFBX(const char* filename); // FBX ·Îµå ÇÔ¼ö Ãß°¡
-glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices); // ¼¾ÅÍ °è»ê (º¤ÅÍ ±â¹İÀ¸·Î º¯°æ)
+bool LoadFBX(const char* filename); // FBX ë¡œë“œ í•¨ìˆ˜ 
+glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices); // ì„¼í„° ê³„ì‚° 
 
-// Àü¿ª º¯¼ö
+void ProcessNode(aiNode* node, int depth);
+
+// ì „ì—­ ë³€ìˆ˜
 GLint width = 1280, height = 720;
 GLuint shaderProgramID, vertexShader, fragmentShader;
 GLuint VAO, VBO, EBO;
 
-GLuint axisVAO, axisVBO;  // Ãà ±×¸®±â¿ë º°µµ VAO/VBO
+GLuint axisVAO, axisVBO;  // ì¶• ê·¸ë¦¬ê¸°ìš© ë³„ë„ VAO/VBO
 
-// FBX ¸ğµ¨ µ¥ÀÌÅÍ (Assimp ±â¹İ)
+// FBX ëª¨ë¸ ë°ì´í„° 
 struct FBXModel {
-    std::vector<glm::vec3> vertices;  // À§Ä¡
+    std::vector<glm::vec3> vertices;  // ìœ„ì¹˜
     std::vector<glm::vec3> colors;    
-    std::vector<GLuint> indices;      // ÀÎµ¦½º
+    std::vector<GLuint> indices;      // ì¸ë±ìŠ¤
     glm::vec3 center;
     bool loaded = false;
 };
+
+
 FBXModel fbxModel;
 
 float cameraAngle = glm::atan(1.0f);
 float targetCameraAngle = glm::atan(1.0f);
-glm::vec3 cameraPos = glm::vec3(5.0f, 5.0f, 5.0f);
+glm::vec3 cameraPos = glm::vec3(100.0f, 100.0f, 100.0f);
 float interpSpeed = 10.0f;
 
-// ImGui °ü·Ã
-bool showAxis = true;  // Ãà Ç¥½Ã Åä±Û
-float modelRotationY = 45.0f;  // ImGui·Î Á¦¾îÇÒ ¸ğµ¨ Y È¸Àü
-float modelScale = 1.5f;       // ImGui·Î Á¦¾îÇÒ ½ºÄÉÀÏ
-
+// ImGui ê´€ë ¨
+bool showAxis = true;  // ì¶• í‘œì‹œ í† ê¸€
+float modelRotationY = 45.0f;  // ImGuië¡œ ì œì–´í•  ëª¨ë¸ Y íšŒì „
+float modelScale = 0.1f;       // ImGuië¡œ ì œì–´í•  ìŠ¤ì¼€ì¼
+int targetFrameDelay = 1;
+bool wireframeMode = false;
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
@@ -54,11 +59,11 @@ int main(int argc, char** argv) {
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK) {
-        std::cerr << "GLEW ÃÊ±âÈ­ ½ÇÆĞ" << std::endl;
+        std::cerr << "GLEW ì´ˆê¸°í™” ì‹¤íŒ¨" << std::endl;
         return -1;
     }
 
-    // ImGui ÃÊ±âÈ­
+    // ImGui ì´ˆê¸°í™”
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -71,26 +76,28 @@ int main(int argc, char** argv) {
     MakeFragmentShaders();
     shaderProgramID = MakeShaderProgram();
     if (shaderProgramID == 0) {
-        std::cerr << "¼ÎÀÌ´õ ÇÁ·Î±×·¥ »ı¼º ½ÇÆĞ" << std::endl;
+        std::cerr << "ì…°ì´ë” í”„ë¡œê·¸ë¨ ìƒì„± ì‹¤íŒ¨" << std::endl;
         return -1;
     }
 
     InitBuffers();
 
-    // ÃÊ±â FBX ·Îµå (¿¹½Ã ÆÄÀÏ)
-    if (!LoadFBX("Avatar_Loli_Catalyst_KleeCostumeWitch.fbx")) {
-        std::cerr << "ÃÊ±â FBX ·Îµå ½ÇÆĞ. ÆÄÀÏÀ» È®ÀÎÇÏ¼¼¿ä." << std::endl;
+    // ì´ˆê¸° FBX ë¡œë“œ (ì˜ˆì‹œ íŒŒì¼)
+    if (!LoadFBX("SK_West_Heli_AH64D.FBX")) {
+        std::cerr << "ì´ˆê¸° FBX ë¡œë“œ ì‹¤íŒ¨. íŒŒì¼ì„ í™•ì¸í•˜ì„¸ìš”." << std::endl;
     }
+    Time::Initialize();
 
     glutDisplayFunc(DrawScene);
     glutReshapeFunc(Reshape);
     glutKeyboardFunc(Keyboard);
-    glutTimerFunc(16, Timer, 0); // ~60 FPS
+    glutTimerFunc(targetFrameDelay, Timer, 0); // ~60 FPS
 	glutKeyboardFunc(Keyboard);
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
-	Time::Initialize();
+
     glutMainLoop();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGLUT_Shutdown();
     ImGui::DestroyContext();
@@ -100,7 +107,7 @@ int main(int argc, char** argv) {
 void MakeVertexShaders() {
     GLchar* vertexSource = filetobuf("vertex3D.glsl");
     if (!vertexSource) {
-        std::cerr << "ERROR: vertex3D.glsl ÆÄÀÏÀ» ÀĞÁö ¸øÇß½À´Ï´Ù." << std::endl;
+        std::cerr << "ERROR: vertex3D.glsl íŒŒì¼ì„ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤." << std::endl;
         return;
     }
 
@@ -113,7 +120,7 @@ void MakeVertexShaders() {
     glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
     if (!result) {
         glGetShaderInfoLog(vertexShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: vertex shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: vertex shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
     }
     free(vertexSource);
 }
@@ -121,7 +128,7 @@ void MakeVertexShaders() {
 void MakeFragmentShaders() {
     GLchar* fragmentSource = filetobuf("fragment.glsl");
     if (!fragmentSource) {
-        std::cerr << "ERROR: fragment.glsl ÆÄÀÏÀ» ÀĞÁö ¸øÇß½À´Ï´Ù." << std::endl;
+        std::cerr << "ERROR: fragment.glsl íŒŒì¼ì„ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤." << std::endl;
         return;
     }
 
@@ -134,7 +141,7 @@ void MakeFragmentShaders() {
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
     if (!result) {
         glGetShaderInfoLog(fragmentShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: fragment shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: fragment shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
     }
     free(fragmentSource);
 }
@@ -150,7 +157,7 @@ GLuint MakeShaderProgram() {
     glGetProgramiv(shaderID, GL_LINK_STATUS, &result);
     if (!result) {
         glGetProgramInfoLog(shaderID, 512, NULL, errorLog);
-        std::cerr << "ERROR: shader program ¿¬°á ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: shader program ì—°ê²° ì‹¤íŒ¨\n" << errorLog << std::endl;
         return 0;
     }
 
@@ -161,18 +168,18 @@ GLuint MakeShaderProgram() {
 }
 
 void InitBuffers() {
-    // ¸ŞÀÎ ¸ğµ¨ VAO/VBO/EBO
+    // ë©”ì¸ ëª¨ë¸ VAO/VBO/EBO
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // µ¥ÀÌÅÍ¸¦ ³ªÁß¿¡ Ã¤¿ï °ÍÀÌ¹Ç·Î GL_STATIC_DRAW·Î º¯°æ
+    // ë°ì´í„°ë¥¼ ë‚˜ì¤‘ì— ì±„ìš¸ ê²ƒì´ë¯€ë¡œ GL_STATIC_DRAWë¡œ ë³€ê²½
     glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_STATIC_DRAW);
 
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // µ¥ÀÌÅÍ¸¦ ³ªÁß¿¡ Ã¤¿ï °ÍÀÌ¹Ç·Î GL_STATIC_DRAW·Î º¯°æ
+    // ë°ì´í„°ë¥¼ ë‚˜ì¤‘ì— ì±„ìš¸ ê²ƒì´ë¯€ë¡œ GL_STATIC_DRAWë¡œ ë³€ê²½
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_STATIC_DRAW);
 
     const GLsizei stride = 6 * sizeof(GLfloat);
@@ -183,15 +190,15 @@ void InitBuffers() {
 
     glBindVertexArray(0);
 
-    // --- Ãà µ¥ÀÌÅÍ  ---
+    // --- ì¶• ë°ì´í„°  ---
 
     std::vector<GLfloat> axesData = {
-        -10.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // X red
-        10.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-        0.0f, -10.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // Y blue
-        0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, -10.0f, 0.0f, 1.0f, 0.0f, // Z green
-        0.0f, 0.0f, 10.0f, 0.0f, 1.0f, 0.0f
+        -200.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,   // X red
+        200.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.0f, -200.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // Y blue
+        0.0f, 200.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, -200.0f, 0.0f, 1.0f, 0.0f, // Z green
+        0.0f, 0.0f, 200.0f, 0.0f, 1.0f, 0.0f
     };
 
     glGenVertexArrays(1, &axisVAO);
@@ -199,7 +206,7 @@ void InitBuffers() {
 
     glGenBuffers(1, &axisVBO);
     glBindBuffer(GL_ARRAY_BUFFER, axisVBO);
-    // Ãà µ¥ÀÌÅÍ¸¦ ¿©±â¼­ GL_STATIC_DRAW·Î ÇÑ ¹ø¸¸ ¾÷·ÎµåÇÕ´Ï´Ù.
+    // ì¶• ë°ì´í„°ë¥¼ ì—¬ê¸°ì„œ GL_STATIC_DRAWë¡œ í•œ ë²ˆë§Œ ì—…ë¡œë“œí•©ë‹ˆë‹¤.
     glBufferData(GL_ARRAY_BUFFER, axesData.size() * sizeof(GLfloat), axesData.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -211,13 +218,13 @@ void InitBuffers() {
 void UpdateModelBuffers()
 {
     if (!fbxModel.loaded || fbxModel.vertices.empty() || fbxModel.indices.empty()) {
-        std::cerr << "¸ğµ¨ ¹öÆÛ ¾÷µ¥ÀÌÆ® ½ÇÆĞ: ·ÎµåµÈ µ¥ÀÌÅÍ ¾øÀ½" << std::endl;
+        std::cerr << "ëª¨ë¸ ë²„í¼ ì—…ë°ì´íŠ¸ ì‹¤íŒ¨: ë¡œë“œëœ ë°ì´í„° ì—†ìŒ" << std::endl;
         return;
     }
 
-    // 1. ¹öÅØ½º µ¥ÀÌÅÍ: À§Ä¡ + »ö»ó (¼¾ÅÍ Á¤±ÔÈ­)
+    // 1. ë²„í…ìŠ¤ ë°ì´í„°: ìœ„ì¹˜ + ìƒ‰ìƒ (ì„¼í„° ì •ê·œí™”)
     std::vector<GLfloat> vertexData;
-    // std::vector::reserve¸¦ »ç¿ëÇÏ¿© ¹Ì¸® ¸Ş¸ğ¸®¸¦ ÇÒ´çÇÏ¸é ¼º´É¿¡ ¾à°£ ´õ ÁÁ½À´Ï´Ù.
+    // std::vector::reserveë¥¼ ì‚¬ìš©í•˜ì—¬ ë¯¸ë¦¬ ë©”ëª¨ë¦¬ë¥¼ í• ë‹¹í•˜ë©´ ì„±ëŠ¥ì— ì•½ê°„ ë” ì¢‹ìŠµë‹ˆë‹¤.
     vertexData.reserve(fbxModel.vertices.size() * 6); // 6 = pos(3) + color(3)
 
     for (size_t i = 0; i < fbxModel.vertices.size(); ++i) {
@@ -228,7 +235,7 @@ void UpdateModelBuffers()
             });
     }
 
-    // 2. VBO ¹× EBO¿¡ µ¥ÀÌÅÍ ¾÷·Îµå (GL_STATIC_DRAW »ç¿ë)
+    // 2. VBO ë° EBOì— ë°ì´í„° ì—…ë¡œë“œ (GL_STATIC_DRAW ì‚¬ìš©)
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -239,17 +246,17 @@ void UpdateModelBuffers()
 
     glBindVertexArray(0);
 
-    std::cout << "¸ğµ¨ ¹öÆÛ°¡ GPU¿¡ ¾÷·ÎµåµÇ¾ú½À´Ï´Ù. (Á¤Á¡ " << fbxModel.vertices.size() << "°³)" << std::endl;
+    std::cout << "ëª¨ë¸ ë²„í¼ê°€ GPUì— ì—…ë¡œë“œë˜ì—ˆìŠµë‹ˆë‹¤. (ì •ì  " << fbxModel.vertices.size() << "ê°œ)" << std::endl;
 }
 
-// Assimp·Î FBX ·Îµå
+// Assimpë¡œ FBX ë¡œë“œ
 bool LoadFBX(const char* filename) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(filename,
-        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        std::cerr << "Assimp ·Îµå ½ÇÆĞ: " << importer.GetErrorString() << std::endl;
+        std::cerr << "Assimp ë¡œë“œ ì‹¤íŒ¨: " << importer.GetErrorString() << std::endl;
         return false;
     }
 
@@ -258,40 +265,45 @@ bool LoadFBX(const char* filename) {
     fbxModel.indices.clear();
     fbxModel.loaded = false;
 
-    // ¸ğµç ¸Ş½¬¸¦ ¼øÈ¸ÇÏ¸ç µ¥ÀÌÅÍ¸¦ º´ÇÕÇÕ´Ï´Ù.
+     // --- ê³¨ê²©(Bone) êµ¬ì¡° ì¶œë ¥ ---
+    std::cout << "\n--- FBX Node/Skeleton Hierarchy ---" << std::endl;
+    // aiSceneì˜ ë£¨íŠ¸ ë…¸ë“œë¶€í„° ì¬ê·€ì ìœ¼ë¡œ ë…¸ë“œ ê³„ì¸µ êµ¬ì¡°ë¥¼ ì¶œë ¥í•©ë‹ˆë‹¤.
+    ProcessNode(scene->mRootNode, 0);
+    std::cout << "-----------------------------------" << std::endl;
+    // ëª¨ë“  ë©”ì‰¬ë¥¼ ìˆœíšŒí•˜ë©° ë°ì´í„°ë¥¼ ë³‘í•©í•©ë‹ˆë‹¤.
     for (unsigned int m = 0; m < scene->mNumMeshes; m++) {
         aiMesh* mesh = scene->mMeshes[m];
 
-        // ÀÌ ¸Ş½¬ÀÇ Á¤Á¡ÀÌ ½ÃÀÛµÇ±â Àü, fbxModel¿¡ ÀÌ¹Ì ÀúÀåµÈ Á¤Á¡ÀÇ °³¼ö.
-        // ÀÌ°ÍÀÌ ÀÌ ¸Ş½¬ÀÇ ÀÎµ¦½º ¿ÀÇÁ¼Â(offset)ÀÌ µË´Ï´Ù.
+        // ì´ ë©”ì‰¬ì˜ ì •ì ì´ ì‹œì‘ë˜ê¸° ì „, fbxModelì— ì´ë¯¸ ì €ì¥ëœ ì •ì ì˜ ê°œìˆ˜.
+        // ì´ê²ƒì´ ì´ ë©”ì‰¬ì˜ ì¸ë±ìŠ¤ ì˜¤í”„ì…‹(offset)ì´ ë©ë‹ˆë‹¤.
         GLuint vertexOffset = static_cast<GLuint>(fbxModel.vertices.size());
 
-        // 1. Á¤Á¡(Vertices)°ú »ö»ó(Colors) µ¥ÀÌÅÍ Ãß°¡
+        // 1. ì •ì (Vertices)ê³¼ ìƒ‰ìƒ(Colors) ë°ì´í„° ì¶”ê°€
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-            // À§Ä¡
+            // ìœ„ì¹˜
             fbxModel.vertices.push_back(glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z));
-            // »ö»ó 
+            // ìƒ‰ìƒ 
             glm::vec3 colors[4] = { {1,0,0}, {0,1,0}, {0,0,1}, {1,1,0} };
             fbxModel.colors.push_back(colors[(vertexOffset + i) % 4]);
         }
 
-        // 2. ÀÎµ¦½º(Indices) µ¥ÀÌÅÍ Ãß°¡
+        // 2. ì¸ë±ìŠ¤(Indices) ë°ì´í„° ì¶”ê°€
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
-            // Assimp°¡ aiProcess_Triangulate¸¦ º¸ÀåÇÏ¹Ç·Î mNumIndices´Â 3ÀÔ´Ï´Ù.
+            // Assimpê°€ aiProcess_Triangulateë¥¼ ë³´ì¥í•˜ë¯€ë¡œ mNumIndicesëŠ” 3ì…ë‹ˆë‹¤.
             for (unsigned int j = 0; j < face.mNumIndices; j++) {
-                // Áß¿ä: ±×³É face.mIndices[j]¸¦ Ãß°¡ÇÏ¸é ¾È µË´Ï´Ù!
-                // ÀÌ¹Ì fbxModel.vertices¿¡ ÀúÀåµÈ Á¤Á¡µéÀ» °í·ÁÇÏ¿©
-                // 'vertexOffset'À» ´õÇØÁà¾ß ÇÕ´Ï´Ù.
+                // ì¤‘ìš”: ê·¸ëƒ¥ face.mIndices[j]ë¥¼ ì¶”ê°€í•˜ë©´ ì•ˆ ë©ë‹ˆë‹¤!
+                // ì´ë¯¸ fbxModel.verticesì— ì €ì¥ëœ ì •ì ë“¤ì„ ê³ ë ¤í•˜ì—¬
+                // 'vertexOffset'ì„ ë”í•´ì¤˜ì•¼ í•©ë‹ˆë‹¤.
                 fbxModel.indices.push_back(face.mIndices[j] + vertexOffset);
             }
         }
-    } // ´ÙÀ½ ¸Ş½¬·Î ÀÌµ¿
+    } // ë‹¤ìŒ ë©”ì‰¬ë¡œ ì´ë™
 
-    // ¸ğµç ¸Ş½¬°¡ º´ÇÕµÈ ÈÄ ¼¾ÅÍ °è»ê
+    // ëª¨ë“  ë©”ì‰¬ê°€ ë³‘í•©ëœ í›„ ì„¼í„° ê³„ì‚°
     fbxModel.center = CalculateModelCenter(fbxModel.vertices);
     fbxModel.loaded = true;
-    std::cout << "FBX ·Îµå ¼º°ø: " << scene->mNumMeshes << " meshes combined." << std::endl;
+    std::cout << "FBX ë¡œë“œ ì„±ê³µ: " << scene->mNumMeshes << " meshes combined." << std::endl;
     std::cout << "Total Vertices: " << fbxModel.vertices.size() << ", Total Indices: " << fbxModel.indices.size() << std::endl;
 
     UpdateModelBuffers();
@@ -307,21 +319,40 @@ glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices) {
     return center;
 }
 
+void ProcessNode(aiNode* node, int depth)
+{
+    // ë“¤ì—¬ì“°ê¸°ë¥¼ ìœ„í•œ ë¬¸ìì—´ ìƒì„±
+    std::string indent(depth * 2, ' ');
+
+    // ë…¸ë“œ ì´ë¦„ ì¶œë ¥
+    std::cout << indent << "Node Name: " << node->mName.C_Str();
+
+    // ì´ ë…¸ë“œê°€ íŠ¹ì • ë©”ì‰¬ì˜ ë¼ˆ(Bone) ì´ë¦„ê³¼ ì¼ì¹˜í•˜ëŠ”ì§€ í™•ì¸í•˜ëŠ” ë¡œì§ì„ ì¶”ê°€í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+    // ì—¬ê¸°ì„œëŠ” ê°„ë‹¨í•˜ê²Œ ë…¸ë“œì˜ ì´ë¦„ë§Œ ì¶œë ¥í•©ë‹ˆë‹¤. (ëŒ€ë¶€ë¶„ì˜ ë¼ˆê°€ ë…¸ë“œ ì´ë¦„ìœ¼ë¡œ ì¡´ì¬í•©ë‹ˆë‹¤)
+    std::cout << std::endl;
+
+    // ëª¨ë“  ìì‹ ë…¸ë“œì— ëŒ€í•´ ì¬ê·€ì ìœ¼ë¡œ ì²˜ë¦¬
+    for (unsigned int i = 0; i < node->mNumChildren; i++)
+    {
+        ProcessNode(node->mChildren[i], depth + 1);
+    }
+}
+
 void DrawScene() 
 {
     Time::Update();
-    // 1. µ¥ÀÌÅÍ ·Îµå È®ÀÎ 
+    // 1. ë°ì´í„° ë¡œë“œ í™•ì¸ 
     if (!fbxModel.loaded || fbxModel.indices.empty()) {
        
-        std::cerr << "FBX µ¥ÀÌÅÍ°¡ ·ÎµåµÇÁö ¾Ê¾Ò½À´Ï´Ù." << std::endl;
+        std::cerr << "FBX ë°ì´í„°ê°€ ë¡œë“œë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤." << std::endl;
     }
 
-    // 2. Ä«¸Ş¶ó À§Ä¡ ¾÷µ¥ÀÌÆ®
+    // 2. ì¹´ë©”ë¼ ìœ„ì¹˜ ì—…ë°ì´íŠ¸
     float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z);
     cameraPos.x = r * glm::cos(cameraAngle);
     cameraPos.z = r * glm::sin(cameraAngle);
 
-    // 3. ¾À Å¬¸®¾î
+    // 3. ì”¬ í´ë¦¬ì–´
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -330,7 +361,7 @@ void DrawScene()
 
     glUseProgram(shaderProgramID);
 
-    // 4. Uniform ¼³Á¤ (View, Proj - ¸ğµç °´Ã¼ °øÅë)
+    // 4. Uniform ì„¤ì • (View, Proj - ëª¨ë“  ê°ì²´ ê³µí†µ)
     GLint viewLoc = glGetUniformLocation(shaderProgramID, "view");
     GLint projLoc = glGetUniformLocation(shaderProgramID, "proj");
 
@@ -343,28 +374,35 @@ void DrawScene()
 
     GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
 
-    // 5. ¸ğµ¨ ±×¸®±â
+    // 5. ëª¨ë¸ ê·¸ë¦¬ê¸°
     if (fbxModel.loaded && !fbxModel.indices.empty())
     {
-        // 5-1. ¸ğµ¨ ¸ÅÆ®¸¯½º ¼³Á¤
+        // 5-1. ëª¨ë¸ ë§¤íŠ¸ë¦­ìŠ¤ ì„¤ì •
         glm::mat4 modelMat = glm::mat4(1.0f);
-        modelMat = glm::rotate(modelMat, glm::radians(modelRotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+        //modelMat = glm::rotate(modelMat, glm::radians(modelRotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMat = glm::rotate(modelMat, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Xì¶• -90ë„ íšŒì „ -> opengl ê¸°ë³¸ ì¢Œí‘œê³„ì— ë§ì¶¤
         modelMat = glm::scale(modelMat, glm::vec3(modelScale));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
 
-        // 5-2. ±×¸®±â (µ¥ÀÌÅÍ ¾÷·ÎµåX, ±×¸®±â ¸í·ÉO)
+        // 5-2. ê·¸ë¦¬ê¸° (ë°ì´í„° ì—…ë¡œë“œX, ê·¸ë¦¬ê¸° ëª…ë ¹O)
         glBindVertexArray(VAO);
+        if (wireframeMode) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
+        else {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
         glDrawElements(GL_TRIANGLES, fbxModel.indices.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 
-    // 6. Ãà ±×¸®±â (Åä±Û °¡´É)
+    // 6. ì¶• ê·¸ë¦¬ê¸° (í† ê¸€ ê°€ëŠ¥)
     if (showAxis) {
-        // 6-1. ¸ğµ¨ ¸ÅÆ®¸¯½º ¼³Á¤ (ÃàÀº ±âº»)
+        // 6-1. ëª¨ë¸ ë§¤íŠ¸ë¦­ìŠ¤ ì„¤ì • (ì¶•ì€ ê¸°ë³¸)
         glm::mat4 axisMat = glm::mat4(1.0f);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(axisMat));
 
-        // 6-2. ±×¸®±â (µ¥ÀÌÅÍ ¾÷·ÎµåX, ±×¸®±â ¸í·ÉO)
+        // 6-2. ê·¸ë¦¬ê¸° (ë°ì´í„° ì—…ë¡œë“œX, ê·¸ë¦¬ê¸° ëª…ë ¹O)
         glBindVertexArray(axisVAO);
         glDrawArrays(GL_LINES, 0, 6);
         glBindVertexArray(0);
@@ -372,7 +410,7 @@ void DrawScene()
 
 
   
-    // 7. ImGui ·»´õ¸µ (ÀÌÇÏ µ¿ÀÏ)
+    // 7. ImGui ë Œë”ë§ (ì´í•˜ ë™ì¼)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGLUT_NewFrame();
     ImGui::NewFrame();
@@ -385,7 +423,7 @@ void DrawScene()
     );
     ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
 
-    // ImGui UI À©µµ¿ì
+    // ImGui UI ìœˆë„ìš°
     ImGui::Begin("FBX Model Controls");
 
 
@@ -397,19 +435,20 @@ void DrawScene()
 
     ImGui::Text("FPS: %.1f", fps);
 
+    // === ê°±ì‹  ì£¼ê¸° ì œì–´ ìŠ¬ë¼ì´ë” ===
+  
+    ImGui::SliderInt("Frame Delay ", &targetFrameDelay, 1, 16);
+    ImGui::Separator();
 
-    if (ImGui::Button("Load FBX Model")) {
-        const char* fbxPath = "Avatar_Loli_Catalyst_KleeCostumeWitch.fbx";
-        LoadFBX(fbxPath); // LoadFBX°¡ ³»ºÎÀûÀ¸·Î UpdateModelBuffers¸¦ È£ÃâÇÕ´Ï´Ù.
-    }
-    if (ImGui::Button("test")) 
+
+
+    if (ImGui::Button("wired frame")) 
     {
-		std::cout << "Test button clicked!" << std::endl;
+        wireframeMode = !wireframeMode;
     }
 
     ImGui::End();
 
-    // ImGui ·»´õ¸µ
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -419,7 +458,7 @@ void Reshape(int w, int h) {
     glViewport(0, 0, w, h);
     width = w;
     height = h;
-    ImGui_ImplGLUT_ReshapeFunc(w, h);  // ImGui ¸®¼ÎÀÌÇÁ
+    ImGui_ImplGLUT_ReshapeFunc(w, h);  // ImGui ë¦¬ì…°ì´í”„
 }
 
 void Keyboard(unsigned char key, int x, int y) {
@@ -435,17 +474,17 @@ void Timer(int value) {
    
     cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * Time::DeltaTime());
     glutPostRedisplay();
-    glutTimerFunc(16, Timer, 0);
+    glutTimerFunc(targetFrameDelay, Timer, 0);
 }
 
 void Mouse(int button, int state, int x, int y) {
     ImGui_ImplGLUT_MouseFunc(button, state, x, y);
 
-    // ImGui°¡ ¸¶¿ì½º¸¦ »ç¿ëÇÏÁö ¾ÊÀ» ¶§¸¸ »ç¿ëÀÚÀÇ ¸¶¿ì½º ·ÎÁ÷ Ã³¸®
+    // ImGuiê°€ ë§ˆìš°ìŠ¤ë¥¼ ì‚¬ìš©í•˜ì§€ ì•Šì„ ë•Œë§Œ ì‚¬ìš©ìì˜ ë§ˆìš°ìŠ¤ ë¡œì§ ì²˜ë¦¬
     ImGuiIO& io = ImGui::GetIO();
     if (!io.WantCaptureMouse)
     {
-        // (»ç¿ëÀÚÀÇ ¸¶¿ì½º Å¬¸¯ ·ÎÁ÷ÀÌ ÀÖ´Ù¸é ¿©±â¿¡ Ãß°¡)
+        // (ì‚¬ìš©ìì˜ ë§ˆìš°ìŠ¤ í´ë¦­ ë¡œì§ì´ ìˆë‹¤ë©´ ì—¬ê¸°ì— ì¶”ê°€)
     }
 }
 
@@ -453,10 +492,10 @@ void Mouse(int button, int state, int x, int y) {
 void Motion(int x, int y) {
     ImGui_ImplGLUT_MotionFunc(x, y);
 
-    // ImGui°¡ ¸¶¿ì½º¸¦ »ç¿ëÇÏÁö ¾ÊÀ» ¶§¸¸ »ç¿ëÀÚÀÇ ¸¶¿ì½º ·ÎÁ÷ Ã³¸®
+    // ImGuiê°€ ë§ˆìš°ìŠ¤ë¥¼ ì‚¬ìš©í•˜ì§€ ì•Šì„ ë•Œë§Œ ì‚¬ìš©ìì˜ ë§ˆìš°ìŠ¤ ë¡œì§ ì²˜ë¦¬
     ImGuiIO& io = ImGui::GetIO();
     if (!io.WantCaptureMouse)
     {
-        // (»ç¿ëÀÚÀÇ ¸¶¿ì½º ÀÌµ¿ ·ÎÁ÷ÀÌ ÀÖ´Ù¸é ¿©±â¿¡ Ãß°¡)
+        // (ì‚¬ìš©ìì˜ ë§ˆìš°ìŠ¤ ì´ë™ ë¡œì§ì´ ìˆë‹¤ë©´ ì—¬ê¸°ì— ì¶”ê°€)
     }
 }
