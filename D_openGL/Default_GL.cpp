@@ -51,10 +51,18 @@ bool showAxis = true;  // 축 표시 토글
 float modelScale = 0.1f;       // ImGui로 제어할 스케일
 int targetFrameDelay = 1;
 bool wireframeMode = false;
+
 float mainBladeRotation = 0.0f;
+float mainBladeSpeed = 100.0f;
 float mainBladeX = 0.0f;
 float mainBladeY = 0.0f;
 float mainBladeZ = 0.0f;
+
+float tailBladeRotation = 0.0f;
+float tailBladeSpeed = 100.0f;
+float tailBladeX = 0.0f;
+float tailBladeY = 0.0f;
+float tailBladeZ = 0.0f;
 
 
 
@@ -126,7 +134,6 @@ int main(int argc, char** argv) {
     ImGui::DestroyContext();
     return 0;
 }
-
 void UpdateModelBuffers(FBXModel* model, GLuint vao, GLuint vbo, GLuint ebo)  // 변경: 버퍼 ID 매개변수 추가
 {
     if (!model->loaded || model->vertices.empty() || model->indices.empty()) {
@@ -159,7 +166,6 @@ void UpdateModelBuffers(FBXModel* model, GLuint vao, GLuint vbo, GLuint ebo)  //
 
     std::cout << "모델 버퍼가 GPU에 업로드되었습니다. (정점 " << model->vertices.size() << "개)" << std::endl;  // 변경: model 이름 출력 위해 간단히
 }
-
 bool LoadFBX(const char* filename, FBXModel* fbxModel)
 {
     Assimp::Importer importer;
@@ -220,7 +226,6 @@ bool LoadFBX(const char* filename, FBXModel* fbxModel)
 
     return fbxModel->loaded;
 }
-
 glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices) {
     if (vertices.empty()) return glm::vec3(0.0f);
     glm::vec3 center(0.0f);
@@ -230,11 +235,12 @@ glm::vec3 CalculateModelCenter(const std::vector<glm::vec3>& vertices) {
     center /= static_cast<float>(vertices.size());
     return center;
 }
-
 void DrawScene()
 {
     Time::Update();
 
+	mainBladeRotation += mainBladeSpeed * Time::DeltaTime();
+	tailBladeRotation += tailBladeSpeed * Time::DeltaTime();
     // 카메라 
     float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z);
     cameraPos.x = r * glm::cos(cameraAngle);
@@ -315,8 +321,9 @@ void DrawScene()
         // 5-1. 모델 매트릭스 설정
         glm::mat4 modelMat = glm::mat4(1.0f);
   
-       // modelMat = glm::rotate(modelMat, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // X축 -90도 회전
-        //modelMat = glm::translate(modelMat, glm::vec3(0.0f, -3.0f, 0.0f));  // 변경: Tail을 Y축 아래로 이동 (겹침 방지)
+
+		modelMat = glm::translate(modelMat, glm::vec3(tailBladeX - 88, tailBladeY + 17, tailBladeZ - 7)); 
+        modelMat = glm::rotate(modelMat, glm::radians(tailBladeRotation), glm::vec3(0.0f, 0.0f, 1.0f));
         modelMat = glm::scale(modelMat, glm::vec3(modelScale));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
 
@@ -373,11 +380,18 @@ void DrawScene()
     ImGui::Separator();
 
 
-    ImGui::SliderFloat("Blade Rotation", &mainBladeRotation, 0, 360);
+    ImGui::SliderFloat("Blade Rotation Speed", &mainBladeSpeed, 100,1000);
 	ImGui::SliderFloat("Blade X", &mainBladeX, -50.0f, 50.0f);
 	ImGui::SliderFloat("Blade Y", &mainBladeY, -50.0f, 50.0f);
 	ImGui::SliderFloat("Blade Z", &mainBladeZ, -50.0f, 50.0f);
     ImGui::Separator();
+
+	ImGui::SliderFloat("Tail Rotation Speed", &tailBladeSpeed, 100, 1000);
+	ImGui::SliderFloat("Tail X", &tailBladeX, -50.0f, 50.0f);
+	ImGui::SliderFloat("Tail Y", &tailBladeY, -50.0f, 50.0f);
+	ImGui::SliderFloat("Tail Z", &tailBladeZ, -50.0f, 50.0f);
+	ImGui::Separator();
+
     if (ImGui::Button("wired frame"))
     {
         wireframeMode = !wireframeMode;
