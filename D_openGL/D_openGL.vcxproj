@@ -234,6 +234,7 @@
     <ClCompile Include="S9.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Time.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
@@ -276,6 +277,7 @@
     <ClInclude Include="imgui_local\imgui_impl_glut.h" />
     <ClInclude Include="imgui_local\imgui_impl_opengl3.h" />
     <ClInclude Include="imgui_local\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Time.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
@@ -286,6 +288,8 @@
   <ItemGroup>
     <None Include="fragment.glsl" />
     <None Include="S18Vertex.glsl" />
+    <None Include="skyboxVertex.glsl" />
+    <None Include="skyboxFrag.glsl" />
     <None Include="vertex.glsl" />
     <None Include="vertex3D.glsl" />
   </ItemGroup>
