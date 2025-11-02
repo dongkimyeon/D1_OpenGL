@@ -147,6 +147,9 @@
     <ClCompile Include="S22.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="TEST.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">

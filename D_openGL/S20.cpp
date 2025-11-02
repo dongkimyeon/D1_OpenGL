@@ -22,18 +22,16 @@ glm::vec3 CalculateModelCenter(Model* model);
 GLint width = 1280, height = 720;
 GLuint shaderProgramID, vertexShader, fragmentShader;
 
-// 모델별 VAO/VBO/EBO (분리)
+// 모델별 VAO/VBO/EBO
 GLuint lowVAO, lowVBO, lowEBO;
 GLuint midVAO, midVBO, midEBO;
 GLuint topVAO[2], topVBO[2], topEBO[2];
-
-// Flag와 Barrel을 위한 VAO/VBO/EBO 추가
 GLuint flagVAO[2], flagVBO[2], flagEBO[2];
 GLuint barrelVAO[2], barrelVBO[2], barrelEBO[2];
 
-GLuint axisVAO, axisVBO;  // 축 그리기용 별도 VAO/VBO 추가
+GLuint axisVAO, axisVBO; 
 
-// 바닥 그리기
+
 GLuint floorVAO, floorVBO, floorEBO;
 
 
@@ -61,16 +59,16 @@ float interpSpeed = 10.0f; // 선형 보간 속도
 glm::vec3 moveVec(0.0f, 2.0f, 0.0f);
 bool cameraOrbitAnim = false;
 
-// 카메라 자전 관련 (Y축 yaw 회전)
-float cameraYaw = 0.0f;  // 초기 자전 각도 (라디안)
-float targetCameraYaw = 0.0f;  // 타겟 자전 각도 (부드러운 보간용, 옵션)
+// 카메라 자전 관련 
+float cameraYaw = 0.0f;  
+float targetCameraYaw = 0.0f;  
 
 // 탱크 회전 관련
 float midBodyYRotation = 0.0f;
 float barrelYRotation = 0.0f;
 float flagXRotation = 0.0f;
 //상부 몸체 이동 
-float topSwapProgress = 0.0f;  // 스왑 애니메이션 진행도 (0.0 ~ 1.0)
+float topSwapProgress = 0.0f; 
 
 
 // 명령어 
@@ -114,7 +112,7 @@ int main(int argc, char** argv) {
 	read_obj_file("cube.obj", &lowBody.baseModel);  // lowBody OBJ
 	read_obj_file("cube.obj", &midBody.baseModel);  // midBody OBJ
 	read_obj_file("cube.obj", &topBody[0].baseModel);  // topBody[0] OBJ
-	read_obj_file("cube.obj", &topBody[1].baseModel);  // topBody[1] OBJ (동일 모델, 다른 위치)
+	read_obj_file("cube.obj", &topBody[1].baseModel);  // topBody[1] OBJ
 
 	
 	read_obj_file("cube.obj", &flagModel[0].baseModel);  // flagModel[0] OBJ
@@ -144,10 +142,6 @@ int main(int argc, char** argv) {
 
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
-
-	std::cout << "t: 탱크 본체 회전 토글, l: 상부 스왑, g: 포신 회전, p: 깃발 회전" << std::endl;
-	std::cout << "a: 카메라 공전 토글, r/R: 공전 각도, y/Y: 자전 각도" << std::endl;
-	std::cout << "방향키: 모델 이동, q: 종료" << std::endl;
 
 	glutMainLoop();
 
@@ -410,7 +404,6 @@ void UpdateModelBuffers(ExtendedModel* model, GLuint vao, GLuint vbo, GLuint ebo
 		vertexData.push_back(x);
 		vertexData.push_back(y);
 		vertexData.push_back(z);
-		// 색상 (i % 4로 사이클링)
 		vertexData.push_back(color.r);
 		vertexData.push_back(color.g);
 		vertexData.push_back(color.b);
@@ -498,6 +491,7 @@ void DrawScene() {
 	
 
 	glm::mat4 worldMat = glm::translate(glm::mat4(1.0f), moveVec);
+
 	// ========== LowBody 로컬 매트릭스 계산 ==========
 	glm::mat4 lowLocalMat = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f,1.0f,1.0f));
 	lowLocalMat = lowLocalMat * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));  // 아래 위치
@@ -517,7 +511,7 @@ void DrawScene() {
 	glBindVertexArray(midVAO);
 	glDrawElements(GL_TRIANGLES, midBody.indexCount, GL_UNSIGNED_INT, 0);
 
-	// ========== TopBody[0] 로컬 매트릭스 계산 (애니메이션 적용) ==========
+	// ========== TopBody[0] 로컬 매트릭스  ==========
 	float leftX = glm::mix(-1.0f, 1.0f, topSwapProgress);  // 왼쪽 → 오른쪽으로 이동
 	glm::mat4 topLocalMat0 = midLocalMat * glm::translate(glm::mat4(1.0f), glm::vec3(leftX, 1.0f, 0.0f));  // X 오프셋 동적
 	topLocalMat0 = topLocalMat0 * glm::scale(glm::mat4(1.0f), glm::vec3(0.8f));
@@ -526,7 +520,7 @@ void DrawScene() {
 	glBindVertexArray(topVAO[0]);
 	glDrawElements(GL_TRIANGLES, topBody[0].indexCount, GL_UNSIGNED_INT, 0);
 
-	// ========== TopBody[1] 로컬 매트릭스 계산 (애니메이션 적용) ==========
+	// ========== TopBody[1] 로컬 매트릭스 계산  ==========
 	float rightX = glm::mix(1.0f, -1.0f, topSwapProgress);  // 오른쪽 → 왼쪽으로 이동
 	glm::mat4 topLocalMat1 = midLocalMat * glm::translate(glm::mat4(1.0f), glm::vec3(rightX, 1.0f, 0.0f));  // X 오프셋 동적
 	topLocalMat1 = topLocalMat1 * glm::scale(glm::mat4(1.0f), glm::vec3(0.8f));
@@ -535,7 +529,7 @@ void DrawScene() {
 	glBindVertexArray(topVAO[1]);
 	glDrawElements(GL_TRIANGLES, topBody[1].indexCount, GL_UNSIGNED_INT, 0);
 
-	// ========== Flag[0] 로컬 매트릭스 계산 (TopBody[0] 기준) ==========
+	// ========== Flag[0] 로컬 매트릭스 계산  ==========
 	glm::mat4 flagLocalMat0 = topLocalMat0 *
 		glm::rotate(glm::mat4(1.0f), glm::radians(flagXRotation), glm::vec3(1.0f, 0.0f, 0.0f)) *  // TopBody 주위 Y축 공전
 		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.7f, 0.0f)); 
@@ -720,18 +714,6 @@ void Timer(int value) {
 		targetCameraAngle += 1.0f * delta;  // 초당 30도 공전 속도 (조정 가능)
 	}
 
-	// topBody 스왑 애니메이션 (기존)
-	if (lFlag % 2 == 0) {
-		topSwapProgress += 1.0f * delta;
-		if (topSwapProgress >= 1.0f) {
-			topSwapProgress = 1.0f;
-		}
-	} else {
-		topSwapProgress -= 1.0f * delta;
-		if (topSwapProgress <= 0.0f) {
-			topSwapProgress = 0.0f;
-		}
-	}
 
 	glutPostRedisplay();
 	glutTimerFunc(16, Timer, 0);
