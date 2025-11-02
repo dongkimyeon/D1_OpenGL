@@ -499,7 +499,7 @@ void DrawScene() {
 
 	glm::mat4 worldMat = glm::translate(glm::mat4(1.0f), moveVec);
 	// ========== LowBody 로컬 매트릭스 계산 ==========
-	glm::mat4 lowLocalMat = glm::scale(glm::mat4(1.0f), glm::vec3(1.5f));
+	glm::mat4 lowLocalMat = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f,1.0f,1.0f));
 	lowLocalMat = lowLocalMat * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));  // 아래 위치
 	glm::mat4 lowModelMat = worldMat * lowLocalMat;
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(lowModelMat));
@@ -509,11 +509,10 @@ void DrawScene() {
 	// ========== MidBody 로컬 매트릭스 계산 ==========
 	glm::mat4 midLocalMat = glm::mat4(1.0f);
 	midLocalMat = glm::translate(midLocalMat, glm::vec3(0.0f, 0.0f, 0.0f));  // 중앙 위치
-	midLocalMat = glm::scale(midLocalMat, glm::vec3(1.0f));
 	midLocalMat = glm::rotate(midLocalMat, glm::radians(midBodyYRotation), glm::vec3(0.0f, 1.0f, 0.0f));  // Y축으로 회전
 
 	glm::mat4 midModelMat = worldMat * midLocalMat;
-
+	midModelMat = glm::scale(midModelMat, glm::vec3(1.7f, 0.8f, 1.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(midModelMat));
 	glBindVertexArray(midVAO);
 	glDrawElements(GL_TRIANGLES, midBody.indexCount, GL_UNSIGNED_INT, 0);
@@ -540,8 +539,8 @@ void DrawScene() {
 	glm::mat4 flagLocalMat0 = topLocalMat0 *
 		glm::rotate(glm::mat4(1.0f), glm::radians(flagXRotation), glm::vec3(1.0f, 0.0f, 0.0f)) *  // TopBody 주위 Y축 공전
 		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.7f, 0.0f)); 
-	flagLocalMat0 = flagLocalMat0 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3f));  // Flag 크기 스케일
 	glm::mat4 flagModelMat0 = worldMat * flagLocalMat0;
+	flagModelMat0 = flagModelMat0 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3, 2.0, 0.3));  // Flag 크기 스케일
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(flagModelMat0));
 	glBindVertexArray(flagVAO[0]);
 	glDrawElements(GL_TRIANGLES, flagModel[0].indexCount, GL_UNSIGNED_INT, 0);
@@ -550,8 +549,9 @@ void DrawScene() {
 	glm::mat4 flagLocalMat1 = topLocalMat1 *
 		glm::rotate(glm::mat4(1.0f), glm::radians(-flagXRotation), glm::vec3(1.0f, 0.0f, 0.0f)) *  // TopBody 주위 Y축 공전
 		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.7f, 0.0f));
-	flagLocalMat1 = flagLocalMat1 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3f));  // Flag 크기 스케일
+
 	glm::mat4 flagModelMat1 = worldMat * flagLocalMat1;
+	flagModelMat1 = flagModelMat1 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3,2.0,0.3));  // Flag 크기 스케일
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(flagModelMat1));
 	glBindVertexArray(flagVAO[1]);
 	glDrawElements(GL_TRIANGLES, flagModel[1].indexCount, GL_UNSIGNED_INT, 0);
@@ -560,8 +560,9 @@ void DrawScene() {
 	glm::mat4 barrelLocalMat0 = topLocalMat0 *
 	glm::rotate(glm::mat4(1.0f), glm::radians(barrelYRotation), glm::vec3(0.0f, 1.0f, 0.0f)) *  // TopBody 주위 Y축 공전
 	glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.7f));  // Top 앞쪽으로 이동
-	barrelLocalMat0 = barrelLocalMat0 * glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));  // Barrel 크기 스케일
+
 	glm::mat4 barrelModelMat0 = worldMat * barrelLocalMat0;
+	barrelModelMat0 = barrelModelMat0 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3, 0.3, 2.0));  // Barrel 크기 스케일
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(barrelModelMat0));
 	glBindVertexArray(barrelVAO[0]);
 	glDrawElements(GL_TRIANGLES, barrelModel[0].indexCount, GL_UNSIGNED_INT, 0);
@@ -570,8 +571,9 @@ void DrawScene() {
 	glm::mat4 barrelLocalMat1 = topLocalMat1 *
 	glm::rotate(glm::mat4(1.0f), glm::radians(-barrelYRotation), glm::vec3(0.0f, 1.0f, 0.0f)) *  // TopBody 주위 Y축 공전
 	glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.7f));  // Top 앞쪽으로 이동
-	barrelLocalMat1 = barrelLocalMat1 * glm::scale(glm::mat4(1.0f), glm::vec3(0.4f));  // Barrel 크기 스케일
+	
 	glm::mat4 barrelModelMat1 = worldMat * barrelLocalMat1;
+	barrelModelMat1 = barrelModelMat1 * glm::scale(glm::mat4(1.0f), glm::vec3(0.3, 0.3, 2.0));  // Barrel 크기 스케일
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(barrelModelMat1));
 	glBindVertexArray(barrelVAO[1]);
 	glDrawElements(GL_TRIANGLES, barrelModel[1].indexCount, GL_UNSIGNED_INT, 0);
