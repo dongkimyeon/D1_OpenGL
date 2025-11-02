@@ -145,6 +145,10 @@ int main(int argc, char** argv) {
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
 
+	std::cout << "t: 탱크 본체 회전 토글, l: 상부 스왑, g: 포신 회전, p: 깃발 회전" << std::endl;
+	std::cout << "a: 카메라 공전 토글, r/R: 공전 각도, y/Y: 자전 각도" << std::endl;
+	std::cout << "방향키: 모델 이동, q: 종료" << std::endl;
+
 	glutMainLoop();
 
 	ImGui_ImplOpenGL3_Shutdown();
