@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
     glutMotionFunc(Motion);
 
 
-    // main() 함수의 glutMainLoop() 직전 (InitBuffers()나 UpdateModelBuffers() 후)에 추가
+
     std::cout << "=== 사용 가능한 명령어 ===" << std::endl;
     std::cout << "'a': 카메라 궤도 애니메이션 토글" << std::endl;
     std::cout << "'r' / 'R': 카메라 공전" << std::endl;
