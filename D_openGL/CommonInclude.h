@@ -27,17 +27,17 @@
 #include "FileRead.h"
 #include "ObjRead.h"
 
-#include <assimp/Importer.hpp>
-#include <assimp/cimport.h>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+//#include <assimp/Importer.hpp>
+//#include <assimp/cimport.h>
+//#include <assimp/postprocess.h>
+//#include <assimp/scene.h>
 
 //imgui
 #include "imgui/imgui.h"
 #include "imgui_local/imgui_impl_glut.h"
 #include "imgui_local/imgui_impl_opengl3.h"
 
-#include "image_loader/stb_image.h"
+//#include "image_loader/stb_image.h"
 #include "image_loader/SOIL.h"
 
 

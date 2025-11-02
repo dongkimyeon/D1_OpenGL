@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include "CommonInclude.h" // filetobuf 함수와 ObjRead.h 포함
+#include "CommonInclude.h" 
 
 // 함수 선언
 void MakeVertexShaders();
@@ -11,11 +11,13 @@ GLvoid Reshape(int w, int h);
 void Keyboard(unsigned char key, int x, int y);
 void Timer(int value);
 void LoadOBJ(const char* filename);
+void Mouse(int button, int state, int x, int y);
+void Motion(int x, int y);
 
 glm::vec3 CalculateModelCenter(Model* model);
 
 // 전역 변수
-GLint width = 800, height = 600;
+GLint width = 1280, height = 720;
 GLuint shaderProgramID, vertexShader, fragmentShader;
 GLuint VAO, VBO, EBO;
 
@@ -29,6 +31,7 @@ struct ExtendedModel {
 
 ExtendedModel cube;
 
+
 float cameraAngle = glm::atan(1.0f); // 초기 각도 (45도 라디안)
 float targetCameraAngle = glm::atan(1.0f); // 타겟 카메라 각도
 
@@ -41,13 +44,24 @@ int main(int argc, char** argv) {
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(width, height);
-	glutCreateWindow("Simple Square");
+	glutCreateWindow("S20_with_ImGui"); // 창 이름 변경
 
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK) {
 		std::cerr << "GLEW 초기화 실패" << std::endl;
 		return -1;
 	}
+
+	// --- ImGui 초기화 (Default_GL.cpp에서 가져옴) ---
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGLUT_Init();
+	ImGui_ImplOpenGL3_Init("#version 330");
+	// --- ImGui 초기화 끝 ---
+
 
 	MakeVertexShaders();
 	MakeFragmentShaders();
@@ -57,7 +71,7 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	 read_obj_file("cube.obj", &cube.baseModel);
+	read_obj_file("cube.obj", &cube.baseModel);
 
 	InitBuffers();
 
@@ -66,7 +80,18 @@ int main(int argc, char** argv) {
 	glutKeyboardFunc(Keyboard);
 	glutTimerFunc(16, Timer, 0); // 타이머 등록 (~60 FPS)
 
+
+	glutMouseFunc(Mouse);
+	glutMotionFunc(Motion);
+
+
 	glutMainLoop();
+
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGLUT_Shutdown();
+	ImGui::DestroyContext();
+
 	return 0;
 }
 
@@ -258,21 +283,20 @@ void DrawScene() {
 	modelMat = glm::scale(modelMat, glm::vec3(1.5f)); // 스케일링 (필요시 조정)
 
 
-	glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); 
-	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f); 
+	glm::mat4 view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-	
+
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
-	
-	//---------------------------------------------------------------------------
-	// XYZ 축 그리기 (로컬: identity → 월드)
 
+	//---------------------------------------------------------------------------
+	// XYZ 축 그리기
 	glm::mat4 AxisMat = glm::mat4(1.0f);  // 축은 로컬 변환 없음
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(AxisMat));
 	std::vector<GLfloat> axesData = {
@@ -294,10 +318,39 @@ void DrawScene() {
 	glBufferData(GL_ARRAY_BUFFER, axesData.size() * sizeof(GLfloat), axesData.data(), GL_STATIC_DRAW);
 
 	glDrawArrays(GL_LINES, 0, 6);
-	
 
-		
+
+
 	glBindVertexArray(0);
+
+
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGLUT_NewFrame();
+	ImGui::NewFrame();
+
+	ImGui::SetNextWindowPos(
+		ImVec2((float)width, 0.0f),
+		ImGuiCond_FirstUseEver,
+		ImVec2(1.0f, 0.0f)
+	);
+	ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiCond_FirstUseEver);
+
+	// ImGui UI 윈도우
+	ImGui::Begin("TEST");
+
+	if (ImGui::Button("test"))
+	{
+		std::cout << "Test button clicked!" << std::endl;
+	}
+
+	ImGui::End();
+
+	// ImGui 렌더링
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	// --- ImGui 렌더링 끝 ---
+
+
 	glutSwapBuffers();
 }
 
@@ -305,9 +358,22 @@ void Reshape(int w, int h) {
 	glViewport(0, 0, w, h);
 	width = w;
 	height = h;
+	ImGui_ImplGLUT_ReshapeFunc(w, h);  // --- ImGui 리셰이프 호출 추가 ---
 }
 
 void Keyboard(unsigned char key, int x, int y) {
+	// --- ImGui 키보드 입력 전달 ---
+	ImGui_ImplGLUT_KeyboardFunc(key, x, y);
+
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.WantCaptureKeyboard) // ImGui가 키보드를 사용 중이면
+	{
+		glutPostRedisplay(); // ImGui 입력을 반영하기 위해 다시 그리기
+		return;              // 프로그램의 키보드 로직은 무시
+	}
+	// --- ImGui 처리 끝 ---
+
+
 	switch (key) {
 	case 'a': // 카메라를 Y축 중심으로 왼쪽 회전
 		targetCameraAngle += 0.1f; // 타겟 각도 증가 (라디안)
@@ -333,4 +399,31 @@ void Timer(int value) {
 
 	glutPostRedisplay();
 	glutTimerFunc(16, Timer, 0); // 다음 타이머 호출
+}
+
+// --- ImGui를 위한 마우스/모션 함수 추가 (Default_GL.cpp에서 가져옴) ---
+
+void Mouse(int button, int state, int x, int y) {
+	ImGui_ImplGLUT_MouseFunc(button, state, x, y);
+
+	// ImGui가 마우스를 사용하지 않을 때만 사용자의 마우스 로직 처리
+	ImGuiIO& io = ImGui::GetIO();
+	if (!io.WantCaptureMouse)
+	{
+		// (S20의 마우스 클릭 로직이 있다면 여기에 추가)
+	}
+	// ImGui는 Timer에서 어차피 다시 그리므로 여기서 PostRedisplay 불필요
+}
+
+
+void Motion(int x, int y) {
+	ImGui_ImplGLUT_MotionFunc(x, y);
+
+	// ImGui가 마우스를 사용하지 않을 때만 사용자의 마우스 로직 처리
+	ImGuiIO& io = ImGui::GetIO();
+	if (!io.WantCaptureMouse)
+	{
+		// (S20의 마우스 이동 로직이 있다면 여기에 추가)
+	}
+	// ImGui는 Timer에서 어차피 다시 그리므로 여기서 PostRedisplay 불필요
 }
