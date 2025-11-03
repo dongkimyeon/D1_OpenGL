@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
+#include <algorithm>
 #include "FileRead.h"
 #include "ObjRead.h"
 
