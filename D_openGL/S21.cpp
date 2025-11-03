@@ -836,6 +836,7 @@ void DrawSpheres() {
 		// 모델 변환 행렬 설정 - 구는 벽의 회전에 영향받지 않음
 		glm::mat4 modelMat = glm::mat4(1.0f);
 		modelMat = glm::translate(modelMat, sphere.position);
+		modelMat = glm::scale(modelMat, glm::vec3(3.0f)); // 구는 크기 조절 없음
 
 		GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));

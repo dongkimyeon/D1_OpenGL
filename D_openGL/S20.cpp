@@ -17,6 +17,19 @@ void Motion(int x, int y);
 glm::vec3 CalculateModelCenter(Model* model);
 
 
+// 초기값 정의 (리셋 기능용)
+bool initialCameraOrbitAnim = false;
+float initialMidBodyYRotation = 0.0f;
+float initialBarrelYRotation = 0.0f;
+float initialFlagXRotation = 0.0f;
+float initialTopSwapProgress = 0.0f;
+glm::vec3 initialMoveVec = glm::vec3(0.0f, 2.0f, 0.0f);
+float initialCameraAngle = glm::atan(1.0f);
+float initialTargetCameraAngle = glm::atan(1.0f);
+float initialCameraYaw = 0.0f;
+float initialTargetCameraYaw = 0.0f;
+glm::vec3 initialCameraPos = glm::vec3(10.0f, 10.0f, 10.0f);
+
 
 // 전역 변수
 GLint width = 1280, height = 720;
@@ -34,6 +47,7 @@ GLuint axisVAO, axisVBO;
 
 GLuint floorVAO, floorVBO, floorEBO;
 
+bool allAnimationsPaused = false; // 모든 애니메이션 일시정지 플래그
 
 struct ExtendedModel {
 	Model baseModel;
@@ -681,6 +695,33 @@ void Keyboard(unsigned char key, int x, int y) {
 	case 'p':
 		pFlag = !pFlag;
 		break;
+	case 'o': // 일시정지 토글
+		allAnimationsPaused = !allAnimationsPaused;
+		break;
+	case 'c': // 초기 상태로 리셋
+		// 애니메이션 플래그들 초기화
+		tFlag = false;
+		lFlag = -1;
+		gFlag = false;
+		pFlag = false;
+		allAnimationsPaused = false;
+		cameraOrbitAnim = initialCameraOrbitAnim;
+
+		// 회전 및 이동 값들 초기화
+		midBodyYRotation = initialMidBodyYRotation;
+		barrelYRotation = initialBarrelYRotation;
+		flagXRotation = initialFlagXRotation;
+		topSwapProgress = initialTopSwapProgress;
+		moveVec = initialMoveVec;
+
+		// 카메라 관련 값들 초기화
+		cameraAngle = initialCameraAngle;
+		targetCameraAngle = initialTargetCameraAngle;
+		cameraYaw = initialCameraYaw;
+		targetCameraYaw = initialTargetCameraYaw;
+		cameraPos = initialCameraPos;
+		break;
+
 	case 'q': // 종료
 		exit(0);
 		break;
@@ -694,26 +735,40 @@ void Keyboard(unsigned char key, int x, int y) {
 void Timer(int value) {
 	float delta = 1.0f / 60.0f;
 
-	cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
+	// 애니메이션이 정지되어 있지 않을 때만 업데이트
+	if (!allAnimationsPaused) {
+		cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
+		cameraYaw = glm::mix(cameraYaw, targetCameraYaw, interpSpeed * delta);
 
+		if (tFlag) {
+			midBodyYRotation += 90.0f * delta;
+		}
+		if (gFlag) {
+			barrelYRotation += 90.0f * delta;
+		}
+		if (pFlag) {
+			flagXRotation += 90.0f * delta;
+		}
 
-	cameraYaw = glm::mix(cameraYaw, targetCameraYaw, interpSpeed * delta);
+		// 카메라 공전 애니메이션
+		if (cameraOrbitAnim) {
+			targetCameraAngle += 1.0f * delta;  // 초당 30도 공전 속도 (조정 가능)
+		}
 
-	if (tFlag) {
-		midBodyYRotation += 90.0f * delta;
+		// topBody 스왑 애니메이션 (기존)
+		if (lFlag % 2 == 0) {
+			topSwapProgress += 1.0f * delta;
+			if (topSwapProgress >= 1.0f) {
+				topSwapProgress = 1.0f;
+			}
+		}
+		else {
+			topSwapProgress -= 1.0f * delta;
+			if (topSwapProgress <= 0.0f) {
+				topSwapProgress = 0.0f;
+			}
+		}
 	}
-	if (gFlag) {
-		barrelYRotation += 90.0f * delta;
-	}
-	if (pFlag) {
-		flagXRotation += 90.0f * delta;
-	}
-
-	// 카메라 공전 애니메이션
-	if (cameraOrbitAnim) {
-		targetCameraAngle += 1.0f * delta;  // 초당 30도 공전 속도 (조정 가능)
-	}
-
 
 	glutPostRedisplay();
 	glutTimerFunc(16, Timer, 0);

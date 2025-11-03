@@ -92,6 +92,11 @@ float interpSpeed = 10.0f;
 glm::vec3 moveVec(0.0f, 1.1f, 0.0f); // Human overall movement vector
 bool cameraOrbitAnim = false;
 
+
+// [추가]
+float cameraOffsetZ = 0.0f;  // 카메라 Z 오프셋 (기본 0)
+float wallRotationX = 0.0f;  // X축 벽 회전 (기존 wallRotationZ와 함께)
+
 // Camera rotation related (Y-axis yaw rotation)
 float cameraYaw = 0.0f;
 float targetCameraYaw = 0.0f;
@@ -212,8 +217,6 @@ int main(int argc, char** argv) {
     std::cout << "화살표 키: 캐릭터 이동 (UP/DOWN/LEFT/RIGHT)" << std::endl;
     std::cout << "'q': 프로그램 종료" << std::endl;
 
-
-    glutMainLoop();
 
     glutMainLoop();
 
@@ -574,7 +577,6 @@ bool CheckJumpOverObstacle() {
     return false;
 }
 
-// New: Get highest top Y of colliding obstacles (for Y snap)
 float GetHighestObstacleTop() {
     AABB charBox = GetCharacterAABB();
     float highestTop = -100.0f;
@@ -651,109 +653,131 @@ void DrawAABB(const AABB& box, glm::vec3 color) {
 void DrawWalls() {
     std::vector<GLfloat> wallData;
 
-    // Left wall (red) - X = -ROOM_SIZE
-    float leftWall[] = {
-        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 1.0f, 0.0f, 0.0f,  // Left bottom back
-        -ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,  // Left bottom front
-        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,  // Left top front
-        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,  // Left top front
-        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 0.0f, 0.0f,  // Left top back
-        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 1.0f, 0.0f, 0.0f   // Left bottom back
+    // [기존: Dead code 제거 유지]
+
+    // [신규: 벽 중심 정의 및 거리 계산으로 가장 가까운 벽 식별]
+    struct Wall {
+        std::string name;
+        glm::vec3 center;
+        std::vector<GLfloat> data;
+        bool enabled = true;  // 기본 렌더링
     };
 
-    // Right wall (green) - X = ROOM_SIZE
-    float rightWall[] = {
-        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 1.0f, 0.0f,  // Right bottom back
-        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 1.0f, 0.0f,  // Right top back
-        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,  // Right top front
-        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,  // Right top front
-        ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,  // Right bottom front
-        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 1.0f, 0.0f   // Right bottom back
+    std::vector<Wall> walls;
+    float minDistance = FLT_MAX;
+    int closestWallIndex = -1;
+
+    // Left wall (red) - center: (-ROOM_SIZE, 0, 0)
+    std::vector<GLfloat> leftData = {
+        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 1.0f, 0.0f, 0.0f,
+        -ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,
+        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,
+        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 0.0f, 0.0f,
+        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 0.0f, 0.0f,
+        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 1.0f, 0.0f, 0.0f
     };
+    walls.push_back({ "Left", glm::vec3(-ROOM_SIZE, 0.0f, 0.0f), leftData });
 
-    // Back wall (blue) - Z = -ROOM_SIZE
-    float backWall[] = {
-        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,  // Left bottom back
-        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,  // Right bottom back
-        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,  // Right top back
-        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,  // Right top back
-        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,  // Left top back
-        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f   // Left bottom back
+    // Right wall (green) - center: (ROOM_SIZE, 0, 0)
+    std::vector<GLfloat> rightData = {
+        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 1.0f, 0.0f,
+        ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 0.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 1.0f, 0.0f,
+        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 1.0f, 0.0f
     };
+    walls.push_back({ "Right", glm::vec3(ROOM_SIZE, 0.0f, 0.0f), rightData });
 
-    // Front wall (magenta) - Z = ROOM_SIZE, floor Y = frontWallY (slide)
-    GLfloat frontWall[36];
-    int idx = 0;
-    frontWall[idx++] = -ROOM_SIZE; frontWall[idx++] = frontWallY; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Left bottom front
-    frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = frontWallY; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Right bottom front
-    frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Right top front
-    frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Right top front
-    frontWall[idx++] = -ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Left top front
-    frontWall[idx++] = -ROOM_SIZE; frontWall[idx++] = frontWallY; frontWall[idx++] = ROOM_SIZE; frontWall[idx++] = 1.0f; frontWall[idx++] = 0.0f; frontWall[idx++] = 1.0f;  // Left bottom front
-
-    // Top wall (yellow) - Y = ROOM_SIZE
-    float topWall[] = {
-        -ROOM_SIZE, ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f,  // Left top back
-        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,  // Left top front
-        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,  // Right top front
-        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,  // Right top front
-        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f,  // Right top back
-        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f   // Left top back
+    // Back wall (blue) - center: (0, 0, -ROOM_SIZE)
+    std::vector<GLfloat> backData = {
+        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,
+        ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,
+        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,
+        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,
+        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 0.0f, 0.0f, 1.0f,
+        -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.0f, 0.0f, 1.0f
     };
+    walls.push_back({ "Back", glm::vec3(0.0f, 0.0f, -ROOM_SIZE), backData });
 
-    // Floor (gray, conditional)
+    // Front wall (magenta) - center: (0, 0, ROOM_SIZE), but Y=frontWallY 고려
+    std::vector<GLfloat> frontData(36);
+    int fdx = 0;
+    frontData[fdx++] = -ROOM_SIZE; frontData[fdx++] = frontWallY; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = frontWallY; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    frontData[fdx++] = -ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    frontData[fdx++] = -ROOM_SIZE; frontData[fdx++] = frontWallY; frontData[fdx++] = ROOM_SIZE; frontData[fdx++] = 1.0f; frontData[fdx++] = 0.0f; frontData[fdx++] = 1.0f;
+    walls.push_back({ "Front", glm::vec3(0.0f, (frontWallY + ROOM_SIZE) / 2.0f, ROOM_SIZE), frontData });  // 중심 Y 평균
+
+    // Top wall (yellow) - center: (0, ROOM_SIZE, 0)
+    std::vector<GLfloat> topData = {
+        -ROOM_SIZE, ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f,
+        -ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE,  ROOM_SIZE, 1.0f, 1.0f, 0.0f,
+        ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f,
+        -ROOM_SIZE,  ROOM_SIZE, -ROOM_SIZE, 1.0f, 1.0f, 0.0f
+    };
+    walls.push_back({ "Top", glm::vec3(0.0f, ROOM_SIZE, 0.0f), topData });
+
+    // Floor (gray) - center: (0, FLOOR_Y, 0), conditional
+    std::vector<GLfloat> floorData;
     if (!floorOpen) {
-        float bottomWall[] = {
-            -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f,  // Left floor back
-            -ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f,  // Left floor front
-            ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f,  // Right floor front
-            ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f,  // Right floor front
-            ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f,  // Right floor back
-            -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f   // Left floor back
+        floorData = {
+            -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f,
+            ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f,
+            ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f,
+            -ROOM_SIZE, FLOOR_Y, -ROOM_SIZE, 0.5f, 0.5f, 0.5f,
+            ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f,
+            -ROOM_SIZE, FLOOR_Y,  ROOM_SIZE, 0.5f, 0.5f, 0.5f
         };
+        walls.push_back({ "Floor", glm::vec3(0.0f, FLOOR_Y, 0.0f), floorData });
+    }
 
-        for (int i = 0; i < 36; i++) {
-            wallData.push_back(bottomWall[i]);
+    // 거리 계산: 카메라에서 가장 가까운 벽 찾기
+    for (size_t i = 0; i < walls.size(); ++i) {
+        float dist = glm::distance(cameraPos, walls[i].center);
+        if (dist < minDistance) {
+            minDistance = dist;
+            closestWallIndex = static_cast<int>(i);
         }
     }
 
-    // Add all wall data
-    for (int i = 0; i < 36; i++) {
-        wallData.push_back(leftWall[i]);
-    }
-    for (int i = 0; i < 36; i++) {
-        wallData.push_back(rightWall[i]);
-    }
-    for (int i = 0; i < 36; i++) {
-        wallData.push_back(backWall[i]);
-    }
-    for (int i = 0; i < 36; i++) {
-        wallData.push_back(frontWall[i]);
-    }
-    for (int i = 0; i < 36; i++) {
-        wallData.push_back(topWall[i]);
+    // 가장 가까운 벽 비활성화 (렌더링 스킵)
+    if (closestWallIndex >= 0) {
+        walls[closestWallIndex].enabled = false;
+       // std::cout << "Culled wall: " << walls[closestWallIndex].name << " (distance: " << minDistance << ")" << std::endl;  // 디버그 출력
     }
 
+    // wallData에 활성화된 벽만 추가
+    for (const auto& wall : walls) {
+        if (wall.enabled) {
+            wallData.insert(wallData.end(), wall.data.begin(), wall.data.end());
+        }
+    }
+
+    // Buffer upload & Draw (기존과 동일, but wallCount 동적 계산)
     glBindVertexArray(wallVAO);
     glBindBuffer(GL_ARRAY_BUFFER, wallVBO);
     glBufferData(GL_ARRAY_BUFFER, wallData.size() * sizeof(GLfloat), wallData.data(), GL_DYNAMIC_DRAW);
 
-    // Apply rotation to walls
     glm::mat4 modelMat = glm::mat4(1.0f);
     modelMat = glm::translate(modelMat, glm::vec3(0.0f, 4.0f, 0.0f));
-    modelMat = glm::rotate(modelMat, glm::radians(wallRotationZ), glm::vec3(0.0f, 0.0f, 1.0f));  // Z-axis rotation
+    modelMat = glm::rotate(modelMat, glm::radians(wallRotationX), glm::vec3(1.0f, 0.0f, 0.0f));
+    modelMat = glm::rotate(modelMat, glm::radians(wallRotationZ), glm::vec3(0.0f, 0.0f, 1.0f));
 
     GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
 
-    // Disable culling to see inside
     glDisable(GL_CULL_FACE);
-
-    int wallCount = floorOpen ? 5 : 6;
-    glDrawArrays(GL_TRIANGLES, 0, wallCount * 6);
+    int activeWallCount = static_cast<int>(wallData.size() / 36);  // [수정: 동적 계산 (각 벽 36 floats)]
+    glDrawArrays(GL_TRIANGLES, 0, activeWallCount * 6);  // 각 벽 6 vertices
 
     glBindVertexArray(0);
 }
+
 
 void DrawObstacles() {
     GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");

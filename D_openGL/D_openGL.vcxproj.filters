@@ -150,6 +150,9 @@
     <ClCompile Include="S21.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="SukJecpp.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">

@@ -163,7 +163,6 @@ int main(int argc, char** argv) {
 	std::cout << "d: 월드 X축 오른쪽 이동 (targetMoveVec.x +0.05)" << std::endl;
 	std::cout << "-: 월드 Z축 앞으로 이동 (targetMoveVec.z -0.05)" << std::endl;
 	std::cout << "=: 월드 Z축 뒤로 이동 (targetMoveVec.z +0.05)" << std::endl;
-	std::cout << "h: 백페이스 컬링 토글 (backfaceCulling)" << std::endl;
 	std::cout << "x: 축(XYZ) 및 궤도 표시 토글 (xFlag)" << std::endl;
 	std::cout << "q: 프로그램 종료" << std::endl;
 	std::cout << "화살표 키: 카메라 회전 (좌/우: X-Z, 상/하: Y 각도)" << std::endl;
@@ -423,7 +422,7 @@ void DrawScene() {
 
 	// 추가: 전체 월드 이동 매트릭스 (모든 객체에 공통 적용)
 	glm::mat4 worldMat = glm::translate(glm::mat4(1.0f), moveVec);
-
+	worldMat = glm::rotate(worldMat, glm::radians(rotateAngle), glm::vec3(0.0f, 0.0f, 1.0f));
 	// 현재 행성 위치들 계산 (원점 기준, moveVec는 worldMat으로 적용)
 	std::vector<glm::vec3> planetPositions(3);
 	float planetTheta = rotateAngle * 0.5f;
@@ -539,12 +538,12 @@ void DrawScene() {
 	}
 
 	//---------------------------------------------------------------------------
-	// 궤도 그리기 (로컬: rotate(tilt) → 월드)
+// 궤도 그리기 (로컬: rotate(tilt) → 월드)  // 기존 행성 궤도
 	glBindVertexArray(orbitVAO);
-	float orbitRadius = planetDist;
+	float orbitRadius = planetDist;  // 행성 궤도 반지름
 	int segments = 100;
 
-	for (int j = 0; j < 3; j++) {
+	for (int j = 0; j < 3; j++) {  // 3개 행성
 		std::vector<GLfloat> orbitVertices;
 		for (int i = 0; i <= segments; ++i) {
 			float theta = 2.0f * glm::pi<float>() * float(i) / float(segments);
@@ -553,7 +552,7 @@ void DrawScene() {
 			orbitVertices.push_back(x);
 			orbitVertices.push_back(0.0f);
 			orbitVertices.push_back(z);
-			orbitVertices.push_back(1.0f);
+			orbitVertices.push_back(1.0f);  // 흰색
 			orbitVertices.push_back(1.0f);
 			orbitVertices.push_back(1.0f);
 		}
@@ -572,7 +571,43 @@ void DrawScene() {
 		glBufferData(GL_ARRAY_BUFFER, orbitVertices.size() * sizeof(GLfloat), orbitVertices.data(), GL_DYNAMIC_DRAW);
 		if (xFlag)
 			glDrawArrays(GL_LINE_LOOP, 0, segments + 1);
-	
+	}
+
+	// *** 추가: 위성 궤도 그리기 (각 위성별로 행성 위치 + tilt 적용) ***
+	float satDist = 0.8f;  // 위성 궤도 반지름 (기존 satDist와 동일)
+	for (int s = 0; s < 3; ++s) {  // 3개 위성 (각각 다른 행성 주위)
+		std::vector<GLfloat> satOrbitVertices;
+		for (int i = 0; i <= segments; ++i) {
+			float theta = 2.0f * glm::pi<float>() * float(i) / float(segments);
+			float x = satDist * glm::cos(theta);
+			float z = satDist * glm::sin(theta);
+			satOrbitVertices.push_back(x);
+			satOrbitVertices.push_back(0.0f);
+			satOrbitVertices.push_back(z);
+			satOrbitVertices.push_back(1.0f); 
+			satOrbitVertices.push_back(1.0f);
+			satOrbitVertices.push_back(1.0f);
+		}
+
+		// 해당 행성의 tilt와 위치 가져오기
+		int pIdx = s;  // 위성 s는 행성 pIdx=s 주위
+		glm::vec3 planetPos = planetPositions[pIdx];  // 기존 계산된 행성 위치 사용
+		float tilt = 0.0f;
+		if (pIdx == 0) tilt = tiltAngle0;
+		else if (pIdx == 1) tilt = tiltAngle1;
+		else if (pIdx == 2) tilt = tiltAngle2;
+
+		// 로컬 변환: tilt 회전 → 행성 위치 이동
+		glm::mat4 localSatOrbitMat = glm::translate(glm::mat4(1.0f), planetPos);  // translate(planetPos)
+		localSatOrbitMat = glm::rotate(localSatOrbitMat, glm::radians(tilt), glm::vec3(1.0f, 0.0f, 1.0f));  // rotate(tilt) * translate (순서 주의: tilt 먼저 적용)
+		glm::mat4 finalSatOrbitMat = worldMat * localSatOrbitMat;  // 월드 이동 적용
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalSatOrbitMat));
+
+		glBindBuffer(GL_ARRAY_BUFFER, orbitVBO);
+		glBufferData(GL_ARRAY_BUFFER, satOrbitVertices.size() * sizeof(GLfloat), satOrbitVertices.data(), GL_DYNAMIC_DRAW);
+		if (xFlag)
+			glDrawArrays(GL_LINE_LOOP, 0, segments + 1);
 	}
 
 	glBindVertexArray(0);
@@ -623,15 +658,11 @@ void Keyboard(unsigned char key, int x, int y)
 		break;
 	case 'z':
 		zFlag = false;
-		tiltAngle0 = 0.0f;
-		tiltAngle1 = 0.0f;
-		tiltAngle2 = 0.0f;
+	
 		break;
 	case 'Z':
 		zFlag = true;
-		tiltAngle0 = 0.0f;
-		tiltAngle1 = 45.0f;
-		tiltAngle2 = 135.0f;
+		
 		break;
 	case 'y':
 		if (targetPlanetDist < 6.0f)
