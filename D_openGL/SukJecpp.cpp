@@ -16,7 +16,7 @@ struct ExtendedModel {
     float MaxHeight = randomMaxHeight(rd);
     float height = minHeight;
     float speed = randomSpeed(rd);
-
+	bool renderFlag = true;
 };
 
 void MakeVertexShaders();
@@ -47,6 +47,8 @@ GLuint MazeVAO, MazeVBO, MazeEBO;
 GLuint PlayerVAO, PlayerVBO, PlayerEBO;
 int n = 0; // 큐브 개수 
 int m = 0;
+
+glm::vec3 mazeMoveVec = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // n x m 큐브 모델 배열
 ExtendedModel** CubeModels;
@@ -336,9 +338,13 @@ void DrawScene() {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
-            glDrawElements(GL_TRIANGLES, thisCubeIndexCount, GL_UNSIGNED_INT,
-                (void*)(currentIndexOffset * sizeof(GLuint)));
+            if (CubeModels[i][j].renderFlag)
+            {
+                glDrawElements(GL_TRIANGLES, thisCubeIndexCount, GL_UNSIGNED_INT,
+                    (void*)(currentIndexOffset * sizeof(GLuint)));
 
+            }
+           
             currentIndexOffset += thisCubeIndexCount;
             cubeIdx++;
         }
@@ -382,9 +388,12 @@ void DrawScene() {
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
-            glDrawElements(GL_TRIANGLES, thisCubeIndexCount, GL_UNSIGNED_INT,
-                (void*)(currentIndexOffset * sizeof(GLuint)));
+            if (CubeModels[i][j].renderFlag)
+            {
+                glDrawElements(GL_TRIANGLES, thisCubeIndexCount, GL_UNSIGNED_INT,
+                    (void*)(currentIndexOffset * sizeof(GLuint)));
 
+            }
             currentIndexOffset += thisCubeIndexCount;
             cubeIdx++;
         }
@@ -434,43 +443,122 @@ void Keyboard(unsigned char key, int x, int y)
     case 'Y':
         targetCameraAngle -= glm::radians(5.0f);
 		break;
-    case 'r': // 미로를 제작
-        // 기본 뼈대 
+    case 'z':
+		mazeMoveVec.z += 1.0f;
+        break;
+    case 'Z':   
+        mazeMoveVec.z -= 1.0f;
+		break;
+    case 'r': 
+    {
+        if (n < 3 || m < 3) {
+            std::cout << "미로가 너무 작아요! (최소 3x3 이상)" << std::endl;
+            break;
+        }
+
+  
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
-              
+                CubeModels[i][j].height = -0.1f;
+                CubeModels[i][j].renderFlag = false;
+            }
+        }
 
-                if (i % 2 == 0 && j % 2 == 0)
-                {
-                    CubeModels[i][j].height = 4.0f;
-           
-                }
-                else
-                {
-					CubeModels[i][j].height = -0.1f;
-                }
 
-                if (j == 0 || j == m - 1 || i == 0 || i == n - 1)
-                {
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                if (i == 0 || i == n - 1 || j == 0 || j == m - 1 || (i % 2 == 0 && j % 2 == 0)) {
                     CubeModels[i][j].height = 4.0f;
+                    CubeModels[i][j].renderFlag = true;
                 }
             }
         }
 
-        for (int i = 0; i < n; i += 2) {  // 짝수 i (행)
-            for (int j = 0; j < m; j += 2) {  // 짝수 j (열)
-                // 오른쪽 벽
-                if (j + 1 < m && randomInt(rd) == 1) {
-                    CubeModels[i][j + 1].height = 4.0f;
-                }
-                // 아래쪽 벽
-                if (i + 1 < n && randomInt(rd) == 0) {
-                    CubeModels[i + 1][j].height = 4.0f;
-                }
+
+        int cell_rows = (n - 1) / 2;
+        int cell_cols = (m - 1) / 2;
+        int total_cells = cell_rows * cell_cols;
+
+ 
+        std::vector<int> parent(total_cells);
+        for (int i = 0; i < total_cells; ++i) parent[i] = i;
+
+        auto find = [&](auto&& self, int x) -> int {
+            if (parent[x] != x) parent[x] = self(self, parent[x]);
+            return parent[x];
+            };
+        auto unite = [&](int x, int y) {
+            int px = find(find, x), py = find(find, y);
+            if (px != py) parent[px] = py;
+            };
+
+    
+        struct Wall {
+            int c1, c2;
+            int wi, wj;
+        };
+        std::vector<Wall> walls;
+
+      
+        for (int cr = 0; cr < cell_rows; ++cr) {
+            for (int cc = 0; cc < cell_cols - 1; ++cc) {
+                int c1 = cr * cell_cols + cc;
+                int c2 = cr * cell_cols + (cc + 1);
+                int wi = 2 * cr + 1;
+                int wj = 2 * (cc + 1);
+                walls.push_back({ c1, c2, wi, wj });
             }
         }
-		break;
 
+     
+        for (int cr = 0; cr < cell_rows - 1; ++cr) {
+            for (int cc = 0; cc < cell_cols; ++cc) {
+                int c1 = cr * cell_cols + cc;
+                int c2 = (cr + 1) * cell_cols + cc;
+                int wi = 2 * (cr + 1);
+                int wj = 2 * cc + 1;
+                walls.push_back({ c1, c2, wi, wj });
+            }
+        }
+
+     
+        for (const auto& w : walls) {
+            if (w.wi < n && w.wj < m) {  // 안전 체크
+                CubeModels[w.wi][w.wj].height = 4.0f;
+                CubeModels[w.wi][w.wj].renderFlag = true;
+            }
+        }
+
+        if (total_cells <= 1) {
+            std::cout << "셀이 1개 이하라서 단순 미로 (벽 거의 없음)" << std::endl;
+        }
+
+        // 8. 랜덤 셔플
+        std::mt19937 rng(rd());
+        std::shuffle(walls.begin(), walls.end(), rng);
+
+        // 9. Kruskal: 연결 안 된 벽만 제거 (walls 비어 있으면 자동 스킵)
+        for (const auto& w : walls) {
+            if (find(find, w.c1) != find(find, w.c2)) {
+                unite(w.c1, w.c2);
+                CubeModels[w.wi][w.wj].renderFlag = false;
+                CubeModels[w.wi][w.wj].height = -0.1f;
+            }
+        }
+
+        // 10. 입구/출구 뚫기 (항상 실행 → 작은 미로에서도 자연스럽게 뚫림)
+        if (n > 2 && m > 2) {
+            // 왼쪽 입구
+            CubeModels[1][0].renderFlag = false;
+            CubeModels[1][0].height = -0.1f;
+            // 오른쪽 출구
+            CubeModels[n - 2][m - 1].renderFlag = false;
+            CubeModels[n - 2][m - 1].height = -0.1f;
+        }
+
+        std::cout << "완벽한 미로 생성 완료! (짝수 " << n << "x" << m << "도 고립 0개 보장, goto 0개)" << std::endl;
+        break;
+    }
     case 'v': // 육면체들이 움직임이 멈추고 낮은 높이로 변함
 		mFlag = !mFlag;
         for(int i = 0; i < n; ++i) {
