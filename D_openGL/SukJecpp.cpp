@@ -7,16 +7,27 @@ std::uniform_int_distribution <int> randomInt(0, 1);
 std::random_device rd;
 
 //구조체
+struct OBB {
+    glm::vec3 center = glm::vec3(0.0f);     // OBB의 중심 (월드 좌표계)
+    glm::vec3 u[3];                         // OBB의 세 정규직교 축 (u[0]=x축, u[1]=y축, u[2]=z축)
+    glm::vec3 half_length = glm::vec3(0.0f); // 각 축을 따른 중심으로부터의 반치수 (Local Space)
+};
+
 struct ExtendedModel {
     Model baseModel;
-    glm::vec3 center;
+    glm::vec3 center; // 미로: 월드 XZ 위치, 플레이어: 월드 XYZ 위치
     GLuint indexCount = 0;
     std::vector<GLuint> indices;
     float minHeight = randomMinHeight(rd);
     float MaxHeight = randomMaxHeight(rd);
-    float height = minHeight;
+    float height = minHeight; // 미로 큐브: Y축 높이, 플레이어: 균일 스케일
     float speed = randomSpeed(rd);
-	bool renderFlag = true;
+    bool renderFlag = true;
+
+    // OBB 관련 추가 항목 (첫 번째 파일에서 가져옴)
+    OBB local_obb;  // 모델링 시점의 로컬 OBB (Model Matrix가 Identity일 때)
+    OBB world_obb;  // 현재 프레임의 월드 OBB (Model Matrix 적용 후)
+    bool is_colliding = false; // 충돌 상태
 };
 
 void MakeVertexShaders();
@@ -31,8 +42,16 @@ void Timer(int value);
 void Mouse(int button, int state, int x, int y);
 void SpecialKeyboard(int key, int x, int y);
 void Motion(int x, int y);
+void update_world_obb(ExtendedModel& model); // OBB 업데이트 함수 (첫 번째 파일에서 가져옴)
+bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& modelB); // OBB 충돌 검사 (첫 번째 파일에서 가져옴)
+bool is_separated(const OBB& a, const OBB& b, const glm::vec3& axis); // 분리 검사 (첫 번째 파일에서 가져옴)
+void ComputeLocalOBB(ExtendedModel& model); // 로컬 OBB 계산 함수 (새로 추가)
+void RenderOBB(const OBB& obb, glm::vec3 color); // OBB 렌더링 함수 (새로 추가)
 
-
+// --- 추가된 부분: 키 떼기 콜백 및 충돌 헬퍼 ---
+void SpecialKeyboardUp(int key, int x, int y);
+bool CheckPlayerCollision(const ExtendedModel& playerModel);
+// --- 추가 끝 ---
 
 GLint width, height;
 GLuint shaderProgramID;
@@ -68,6 +87,13 @@ glm::vec3 centerPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 //명령어 변수
 bool mFlag = false;
 bool oFlag = true;
+
+// 플레이어 위치 (움직임 구현을 위해 추가, 초기 위치 설정)
+glm::vec3 playerPosition = glm::vec3(0.0f, 5.0f, 0.0f); // 플레이어 월드 위치
+// --- 추가된 부분: 플레이어 이동 방향 벡터 ---
+glm::vec3 playerMoveDir = glm::vec3(0.0f);
+// --- 추가 끝 ---
+
 
 void CubeSpeedUp() {
     for (int i = 0; i < n; ++i) {
@@ -117,6 +143,45 @@ void InitBuffers() {
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
+    // --- 추가된 부분: 플레이어 모델 데이터를 VBO/EBO에 한 번 버퍼링 ---
+    std::vector<GLfloat> playerVertexData;
+    std::vector<GLuint> playerIndices;
+    GLuint playerVertexBase = 0;
+
+    Model& pMdl = Player.baseModel;
+    glm::vec3 pCenter = Player.center; // Player.center는 CalculateModelCenter로 계산된 로컬 중심
+    // 플레이어 색상 (예: 흰색)
+    float pr = 1.0f; float pg = 1.0f; float pb = 1.0f;
+
+    for (size_t v = 0; v < pMdl.vertex_count; ++v) {
+        Vertex vert = pMdl.vertices[v];
+        float x = vert.x - pCenter.x;
+        float y = vert.y - pCenter.y;
+        float z = vert.z - pCenter.z;
+        playerVertexData.push_back(x);
+        playerVertexData.push_back(y);
+        playerVertexData.push_back(z);
+        playerVertexData.push_back(pr);
+        playerVertexData.push_back(pg);
+        playerVertexData.push_back(pb);
+    }
+
+    for (size_t f = 0; f < pMdl.face_count; ++f) {
+        playerIndices.push_back(static_cast<GLuint>(pMdl.faces[f].v1) + playerVertexBase);
+        playerIndices.push_back(static_cast<GLuint>(pMdl.faces[f].v2) + playerVertexBase);
+        playerIndices.push_back(static_cast<GLuint>(pMdl.faces[f].v3) + playerVertexBase);
+    }
+    // 그릴 인덱스 개수 저장
+    Player.indexCount = playerIndices.size();
+
+    // 데이터 버퍼링
+    glBindVertexArray(PlayerVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, PlayerVBO);
+    glBufferData(GL_ARRAY_BUFFER, playerVertexData.size() * sizeof(GLfloat), playerVertexData.data(), GL_STATIC_DRAW); // STATIC_DRAW
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, PlayerEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, playerIndices.size() * sizeof(GLuint), playerIndices.data(), GL_STATIC_DRAW); // STATIC_DRAW
+    glBindVertexArray(0);
+    // --- 플레이어 데이터 버퍼링 끝 ---
 }
 
 void main(int argc, char** argv) {
@@ -141,6 +206,9 @@ void main(int argc, char** argv) {
     glutSpecialFunc(SpecialKeyboard);
     glutTimerFunc(16, Timer, 0);
     glutMouseFunc(Mouse);
+    // --- 추가된 부분: 키 떼기 콜백 등록 ---
+    glutSpecialUpFunc(SpecialKeyboardUp);
+    // --- 추가 끝 ---
 
     std::cin >> n >> m;
     //n x m 큐브 모델 동적 할당
@@ -149,18 +217,128 @@ void main(int argc, char** argv) {
         CubeModels[i] = new ExtendedModel[m];
         for (int j = 0; j < m; ++j) {
             read_obj_file("cube.obj", &CubeModels[i][j].baseModel);
-            CubeModels[i][j].center = CalculateModelCenter(&CubeModels[i][j].baseModel);
-            // 수정: speed를 float으로 랜덤 설정 (int 캐스팅 및 스케일링 제거)
+
+            // --- 수정된 부분: center를 월드 XZ 위치로 사용 ---
+            // CubeModels[i][j].center = CalculateModelCenter(&CubeModels[i][j].baseModel); // 로컬 중심 (아마 0,0,0)
+            const float spacing = 1.0f; // DrawScene과 동일한 값
+            glm::vec3 worldTranslation = glm::vec3((j - (m - 1) / 2.0f) * spacing,
+                0.0f,
+                (i - (n - 1) / 2.0f) * spacing);
+            CubeModels[i][j].center = worldTranslation; // 월드 XZ 위치 저장
+            // --- 수정 끝 ---
+
             CubeModels[i][j].speed = randomSpeed(rd);
-            // minHeight와 MaxHeight는 구조체 초기화에서 이미 랜덤 설정됨
+            ComputeLocalOBB(CubeModels[i][j]);
         }
     }
 
-	read_obj_file("sphere.obj", &Player.baseModel);
-	Player.center = CalculateModelCenter(&Player.baseModel);
-	Player.speed = 1.0f;
+    read_obj_file("cube.obj", &Player.baseModel);
+    // --- 수정된 부분: Player.center는 Timer에서 playerPosition으로 매번 업데이트 ---
+    Player.center = CalculateModelCenter(&Player.baseModel); // 로컬 중심 계산 (VBO 생성 시 필요)
+    Player.speed = 1.0f;
+    // --- 수정된 부분: 플레이어 스케일을 0.5f로 설정 ---
+    Player.height = 0.5f; // 플레이어는 height 변수를 균일 스케일로 사용
+    // --- 수정 끝 ---
+
+    // 플레이어 OBB 초기화
+    ComputeLocalOBB(Player);
     InitBuffers(); // 버퍼 초기화
     glutMainLoop();
+}
+
+// 로컬 OBB 계산 함수 (첫 번째 파일의 AABB 기반 OBB 초기화 로직 적용)
+void ComputeLocalOBB(ExtendedModel& model) {
+    if (model.baseModel.vertex_count == 0) return;
+
+    // AABB 계산 (모든 정점 대상)
+    glm::vec3 min_v = glm::vec3(FLT_MAX);
+    glm::vec3 max_v = glm::vec3(-FLT_MAX);
+    for (size_t i = 0; i < model.baseModel.vertex_count; ++i) {
+        Vertex v = model.baseModel.vertices[i];
+        min_v.x = glm::min(min_v.x, v.x);
+        min_v.y = glm::min(min_v.y, v.y);
+        min_v.z = glm::min(min_v.z, v.z);
+        max_v.x = glm::max(max_v.x, v.x);
+        max_v.y = glm::max(max_v.y, v.y);
+        max_v.z = glm::max(max_v.z, v.z);
+    }
+
+    // OBB 설정 (큐브이므로 축 정렬)
+    glm::vec3 local_center = (min_v + max_v) * 0.5f; // (참고용: obj 파일의 AABB 중심)
+    glm::vec3 local_half_length = (max_v - min_v) * 0.5f;
+
+    // --- 수정된 부분 ---
+    // VBO를 (0,0,0) 중심으로 만들었으므로(vert.x - localCenter.x),
+    // OBB의 로컬 중심도 (0,0,0)으로 강제해야 렌더링과 일치합니다.
+    model.local_obb.center = glm::vec3(0.0f);
+    // --- 수정 끝 ---
+
+    model.local_obb.half_length = local_half_length;
+    model.local_obb.u[0] = glm::vec3(1.0f, 0.0f, 0.0f);
+    model.local_obb.u[1] = glm::vec3(0.0f, 1.0f, 0.0f);
+    model.local_obb.u[2] = glm::vec3(0.0f, 0.0f, 1.0f);
+}
+
+// OBB 렌더링 함수: 8 꼭짓점을 계산하고 선으로 그립니다.
+void RenderOBB(const OBB& obb, glm::vec3 color) {
+    // 8 꼭짓점 계산
+    glm::vec3 corners[8];
+    corners[0] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+    corners[1] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+    corners[2] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+    corners[3] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+    corners[4] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+    corners[5] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+    corners[6] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+    corners[7] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+
+    // 선 데이터: 12 에지 (24 버텍스, 각 에지 양 끝)
+    std::vector<GLfloat> lineVertices;
+    // 에지 정의: (0-1, 1-2, 2-3, 3-0, 4-5, 5-6, 6-7, 7-4, 0-4, 1-5, 2-6, 3-7)
+    std::vector<std::pair<int, int>> edges = {
+        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+        {0, 4}, {1, 5}, {2, 6}, {3, 7}
+    };
+
+    for (const auto& edge : edges) {
+        // 시작점
+        lineVertices.push_back(corners[edge.first].x);
+        lineVertices.push_back(corners[edge.first].y);
+        lineVertices.push_back(corners[edge.first].z);
+        lineVertices.push_back(color.x);
+        lineVertices.push_back(color.y);
+        lineVertices.push_back(color.z);
+        // 끝점
+        lineVertices.push_back(corners[edge.second].x);
+        lineVertices.push_back(corners[edge.second].y);
+        lineVertices.push_back(corners[edge.second].z);
+        lineVertices.push_back(color.x);
+        lineVertices.push_back(color.y);
+        lineVertices.push_back(color.z);
+    }
+
+    // 임시 VAO/VBO 생성 및 바인딩 (간단 구현, 매 프레임 재생성)
+    GLuint tempVAO, tempVBO;
+    glGenVertexArrays(1, &tempVAO);
+    glBindVertexArray(tempVAO);
+    glGenBuffers(1, &tempVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, tempVBO);
+    glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(GLfloat), lineVertices.data(), GL_STATIC_DRAW);
+
+    const GLsizei stride = 6 * sizeof(GLfloat);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+    // 선 그리기 (GL_LINES, 24 버텍스)
+    glDrawArrays(GL_LINES, 0, 24);
+
+    // 정리
+    glBindVertexArray(0);
+    glDeleteBuffers(1, &tempVBO);
+    glDeleteVertexArrays(1, &tempVAO);
 }
 
 void MakeVertexShaders()
@@ -231,6 +409,115 @@ GLuint MakeShaderProgram()
     return shaderID;
 }
 
+// --- 수정된 부분: OBB 업데이트 함수 (DrawScene과 변환 순서 일치) ---
+void update_world_obb(ExtendedModel& model) {
+
+    glm::mat4 modelMat = glm::mat4(1.0f);
+
+    if (&model == &Player) {
+        // --- 플레이어 변환 로직 (DrawScene과 일치) ---
+        // 1. 월드 위치로 이동 + Y=0.25 (플레이어 바닥을 Y=0에 맞춤)
+        // Player.height는 0.5이므로, half-length는 0.25입니다.
+        modelMat = glm::translate(modelMat, model.center + glm::vec3(0.0f, 0.25f, 0.0f));
+        // 2. 균일 스케일 적용 (model.height = 0.5f)
+        modelMat = glm::scale(modelMat, glm::vec3(model.height));
+    }
+    else {
+        // --- 미로 큐브 변환 로직 (DrawScene과 일치) ---
+        // 1. Enter Animation (월드 Y 이동)
+        if (enterAnimation) {
+            modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
+        }
+
+        // 2. 월드 XZ 위치로 이동 + Y=0.5 만큼 월드 이동 (FIX: 바닥을 Y=0에 맞춤)
+        // model.center는 XZ 위치만 담고 있습니다. 여기에 +0.5 Y를 추가합니다.
+        modelMat = glm::translate(modelMat, model.center + glm::vec3(0.0f, 0.5f, 0.0f));
+
+        // 3. Y축 변환 (로컬 기준 - 바닥 고정)
+        modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
+        modelMat = glm::scale(modelMat, glm::vec3(1.0f, -model.height, 1.0f));
+        modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
+    }
+
+    // --- (이하 OBB 계산 로직은 동일) ---
+
+    // 모델 행렬의 회전/스케일 부분 (3x3) 추출
+    glm::mat3 rotation_scale_mat = glm::mat3(modelMat);
+
+    // 1. 월드 중심 변환
+    glm::vec4 local_center_h = glm::vec4(model.local_obb.center, 1.0f);
+    model.world_obb.center = glm::vec3(modelMat * local_center_h);
+
+    // 2. 월드 축 변환
+    for (int i = 0; i < 3; i++) {
+        model.world_obb.u[i] = glm::normalize(rotation_scale_mat * model.local_obb.u[i]);
+    }
+
+    // 3. 반치수 설정: 스케일 벡터를 추출하여 local_obb에 적용
+    glm::vec3 scale_factors = glm::vec3(
+        glm::length(rotation_scale_mat[0]), // X축 스케일
+        glm::length(rotation_scale_mat[1]), // Y축 스케일
+        glm::length(rotation_scale_mat[2])  // Z축 스케일
+    );
+
+    // 로컬 반치수에 스케일 팩터를 곱하여 월드 반치수 설정
+    model.world_obb.half_length = model.local_obb.half_length * scale_factors;
+}
+
+// 분리 검사 함수 (첫 번째 파일에서 가져옴)
+bool is_separated(const OBB& a, const OBB& b, const glm::vec3& axis) {
+    // 축의 길이가 너무 작으면 무시 (부동소수점 오차 처리)
+    if (glm::length(axis) < 1e-6) return false;
+
+    // 두 OBB 중심 사이의 벡터
+    glm::vec3 T = b.center - a.center;
+
+    // 1. 중심 간 거리 투영
+    float distance_proj = glm::abs(glm::dot(T, axis));
+
+    // 2. OBB A의 '반지름' 투영 (각 로컬 축의 투영 길이의 합)
+    float radius_a =
+        glm::abs(glm::dot(a.half_length.x * a.u[0], axis)) +
+        glm::abs(glm::dot(a.half_length.y * a.u[1], axis)) +
+        glm::abs(glm::dot(a.half_length.z * a.u[2], axis));
+
+    // 3. OBB B의 '반지름' 투영
+    float radius_b =
+        glm::abs(glm::dot(b.half_length.x * b.u[0], axis)) +
+        glm::abs(glm::dot(b.half_length.y * b.u[1], axis)) +
+        glm::abs(glm::dot(b.half_length.z * b.u[2], axis));
+
+    // 중심 간 거리가 두 반지름의 합보다 크면 분리 (충돌 아님)
+    return distance_proj > (radius_a + radius_b);
+}
+
+// OBB 충돌 검사 함수 (첫 번째 파일에서 가져옴, ExtendedModel에 맞게 수정)
+bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& modelB) {
+    const OBB& a = modelA.world_obb;
+    const OBB& b = modelB.world_obb;
+
+    // 1. OBB A의 축 3개 검사
+    for (int i = 0; i < 3; i++) {
+        if (is_separated(a, b, a.u[i])) return false;
+    }
+
+    // 2. OBB B의 축 3개 검사
+    for (int i = 0; i < 3; i++) {
+        if (is_separated(a, b, b.u[i])) return false;
+    }
+
+    // 3. 교차 축 (A_i x B_j) 9개 검사
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            glm::vec3 cross_axis = glm::cross(a.u[i], b.u[j]);
+            if (is_separated(a, b, cross_axis)) return false;
+        }
+    }
+
+    // 15개 축 모두에서 분리되지 않았다면 충돌!
+    return true;
+}
+
 // 수정된 DrawScene: scissor test로 미니맵 클리어 제한
 void DrawScene() {
     float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z); // XZ plane distance
@@ -239,8 +526,8 @@ void DrawScene() {
 
 
     glEnable(GL_DEPTH_TEST); // 깊이 테스트 활성화
-  
- 
+
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shaderProgramID);
@@ -258,21 +545,24 @@ void DrawScene() {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             Model& mdl = CubeModels[i][j].baseModel;
-            glm::vec3 center = CubeModels[i][j].center;
+            // --- 수정: center를 로컬 중심으로 사용 (VBO 생성 시점) ---
+            glm::vec3 localCenter = CalculateModelCenter(&mdl); // (0,0,0) 가정
 
             float r = (float)i / std::max(1, n - 1);
             float g = (float)j / std::max(1, m - 1);
             float b = 0.5f;
 
-            //초기 위치 설정 y값 
-            glm::vec3 translation = glm::vec3((j - (m - 1) / 2.0f) * spacing, 0.0f, (i - (n - 1) / 2.0f) * spacing);
+            // --- 수정된 부분 (VBO 생성) ---
+            // VBO에 월드 좌표를 굽지 않습니다. 
+            // glm::vec3 translation = CubeModels[i][j].center; // main에서 설정한 월드 XZ 위치 (여기서 사용 안 함)
 
             // add vertices
             for (size_t v = 0; v < mdl.vertex_count; ++v) {
                 Vertex vert = mdl.vertices[v];
-                float x = vert.x - center.x + translation.x;
-                float y = vert.y - center.y + translation.y;
-                float z = vert.z - center.z + translation.z;
+                // --- 수정: 로컬 중심(localCenter) 기준으로 VBO 생성 (월드 XZ 이동 제거) ---
+                float x = vert.x - localCenter.x;
+                float y = vert.y - localCenter.y;
+                float z = vert.z - localCenter.z;
                 vertexData.push_back(x);
                 vertexData.push_back(y);
                 vertexData.push_back(z);
@@ -280,6 +570,7 @@ void DrawScene() {
                 vertexData.push_back(g);
                 vertexData.push_back(b);
             }
+            // --- VBO 생성 수정 끝 ---
 
             int thisCubeIndexCount = 0;  // 이 큐브의 index 수
             for (size_t f = 0; f < mdl.face_count; ++f) {
@@ -300,7 +591,6 @@ void DrawScene() {
     glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(GLfloat), vertexData.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MazeEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_DYNAMIC_DRAW);
-   
 
 
     GLint modelLoc = glGetUniformLocation(shaderProgramID, "model");
@@ -310,7 +600,7 @@ void DrawScene() {
     // 1. 메인 뷰: 전체 화면 렌더링 (기존 카메라)
     glViewport(0, 0, width, height);  // 전체 뷰포트
     glm::mat4 mainView = glm::lookAt(cameraPos, centerPoint, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 mainProj;
+    glm::mat4 mainProj;
     if (oFlag) {
         //원근
         mainProj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 1000.0f);
@@ -326,15 +616,25 @@ void DrawScene() {
 
     int cubeIdx = 0;
     currentIndexOffset = 0;
+    glBindVertexArray(MazeVAO); // --- 추가: 미로 VAO 바인딩 ---
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
+            // --- 수정된 부분: 렌더링 변환 순서 (OBB와 일치시킴) ---
             glm::mat4 modelMat = glm::mat4(1.0f);
+
+            // 1. Enter Animation (월드 Y 이동)
             if (enterAnimation) {
                 modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
             }
-            modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
-            modelMat = glm::scale(modelMat, glm::vec3(1.0f, CubeModels[i][j].height, 1.0f));
+
+            // 2. 월드 XZ 위치로 이동 + Y=0.5 만큼 월드 이동 (FIX: 바닥을 Y=0에 맞춤)
+            modelMat = glm::translate(modelMat, CubeModels[i][j].center + glm::vec3(0.0f, 0.5f, 0.0f));
+
+            // 3. Y축 변환 (로컬 기준 - 바닥 고정)
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
+            modelMat = glm::scale(modelMat, glm::vec3(1.0f, -CubeModels[i][j].height, 1.0f));
+            modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
+            // --- 수정 끝 ---
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
@@ -344,15 +644,48 @@ void DrawScene() {
                     (void*)(currentIndexOffset * sizeof(GLuint)));
 
             }
-           
+
             currentIndexOffset += thisCubeIndexCount;
             cubeIdx++;
         }
     }
 
+    // --- 수정된 부분: 플레이어 렌더링 (바닥을 Y=0에 맞춤) ---
+    // 플레이어 스케일 0.5의 절반인 0.25만큼 Y축 이동
+    glm::mat4 playerModelMat = glm::translate(glm::mat4(1.0f), playerPosition + glm::vec3(0.0f, 0.25f, 0.0f));
+    // 2. 균일 스케일 적용 (Player.height = 0.5f)
+    playerModelMat = glm::scale(playerModelMat, glm::vec3(Player.height));
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(playerModelMat));
+
+    // 플레이어 그리기
+    glBindVertexArray(PlayerVAO);
+    glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
+    // --- 플레이어 렌더링 끝 ---
+
+    // OBB 렌더링을 위해 VAO 바인딩 해제
+    glBindVertexArray(0);
+
+    // --- 추가된 부분: OBB 렌더링을 위한 모델 행렬 초기화 ---
+    // OBB 정점은 이미 월드 좌표계이므로 모델 행렬을 단위 행렬로 설정
+    glm::mat4 identityMat = glm::mat4(1.0f);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(identityMat));
+    // --- OBB 렌더링 ---
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (CubeModels[i][j].renderFlag) {
+                // 충돌 시 노란색, 아닐 시 빨간색
+                glm::vec3 mazeColor = CubeModels[i][j].is_colliding ? glm::vec3(1.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+                RenderOBB(CubeModels[i][j].world_obb, mazeColor);
+            }
+        }
+    }
+    // 충돌 시 노란색, 아닐 시 파란색
+    glm::vec3 playerColor = Player.is_colliding ? glm::vec3(1.0f, 1.0f, 0.0f) : glm::vec3(0.0f, 0.0f, 1.0f);
+    RenderOBB(Player.world_obb, playerColor);
+
     // 미니맵
-    int miniWidth = 200;   
-    int miniHeight = 200; 
+    int miniWidth = 200;
+    int miniHeight = 200;
     int miniX = width - miniWidth;         // 오른쪽 시작
     int miniY = height - miniHeight;       // 위쪽 시작
 
@@ -361,14 +694,13 @@ void DrawScene() {
     glEnable(GL_SCISSOR_TEST); // scissor 활성화
     glScissor(miniX, miniY, miniWidth, miniHeight);  // 클리어 영역 제한
     glViewport(miniX, miniY, miniWidth, miniHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f); 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);  // scissor 복원
 
     // 탑뷰 카메라/프로젝션
-	
     glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, (float)std::max(n, m) + 10.0f, 0.0f), centerPoint, glm::vec3(1.0f, 0.0f, 0.0f));
-	topView = glm::rotate(topView, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    topView = glm::rotate(topView, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 topProj = glm::perspective(glm::radians(45.0f), (float)miniWidth / (float)miniHeight, 0.1f, 1000.0f);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(topView));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(topProj));
@@ -376,15 +708,25 @@ void DrawScene() {
     // 탑뷰 재렌더링 
     cubeIdx = 0;
     currentIndexOffset = 0;
+    glBindVertexArray(MazeVAO); // --- 추가: 미로 VAO 바인딩 ---
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
+            // --- 수정된 부분: 렌더링 변환 순서 (OBB와 일치시킴) ---
             glm::mat4 modelMat = glm::mat4(1.0f);
+
+            // 1. Enter Animation (월드 Y 이동)
             if (enterAnimation) {
                 modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
             }
-            modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
-            modelMat = glm::scale(modelMat, glm::vec3(1.0f, CubeModels[i][j].height, 1.0f));
+
+            // 2. 월드 XZ 위치로 이동 + Y=0.5 만큼 월드 이동 (FIX: 바닥을 Y=0에 맞춤)
+            modelMat = glm::translate(modelMat, CubeModels[i][j].center + glm::vec3(0.0f, 0.5f, 0.0f));
+
+            // 3. Y축 변환 (로컬 기준 - 바닥 고정)
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
+            modelMat = glm::scale(modelMat, glm::vec3(1.0f, -CubeModels[i][j].height, 1.0f));
+            modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
+            // --- 수정 끝 ---
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
@@ -399,11 +741,18 @@ void DrawScene() {
         }
     }
 
-    glEnable(GL_DEPTH_TEST);  
-  
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
+    // --- 추가: 미니맵 플레이어 렌더링 ---
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(playerModelMat)); // 메인 뷰에서 쓴 playerModelMat 재사용
+    glBindVertexArray(PlayerVAO);
+    glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
+    // --- 미니맵 플레이어 렌더링 끝 ---
 
-    glutSwapBuffers(); 
+
+    glEnable(GL_DEPTH_TEST);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glutSwapBuffers();
     glBindVertexArray(0);
 }
 
@@ -429,34 +778,34 @@ glm::vec3 CalculateModelCenter(Model* model) {
 
 void Keyboard(unsigned char key, int x, int y)
 {
-    switch (key) 
+    switch (key)
     {
-	case 'o': // 직각 투영 / 원근 투영 토글
-		oFlag = !oFlag;
+    case 'o': // 직각 투영 / 원근 투영 토글
+        oFlag = !oFlag;
         break;
-	case 'm': // 애니메이션 정지/재개 토글
-		mFlag = !mFlag;
+    case 'm': // 애니메이션 정지/재개 토글
+        mFlag = !mFlag;
         break;
     case 'y':
-		targetCameraAngle += glm::radians(5.0f);
-		break;
+        targetCameraAngle += glm::radians(5.0f);
+        break;
     case 'Y':
         targetCameraAngle -= glm::radians(5.0f);
-		break;
-    case 'z':
-		mazeMoveVec.z += 1.0f;
         break;
-    case 'Z':   
+    case 'z':
+        mazeMoveVec.z += 1.0f;
+        break;
+    case 'Z':
         mazeMoveVec.z -= 1.0f;
-		break;
-    case 'r': 
+        break;
+    case 'r':
     {
         if (n < 3 || m < 3) {
             std::cout << "미로가 너무 작아요! (최소 3x3 이상)" << std::endl;
             break;
         }
 
-  
+
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 CubeModels[i][j].height = -0.1f;
@@ -479,7 +828,7 @@ void Keyboard(unsigned char key, int x, int y)
         int cell_cols = (m - 1) / 2;
         int total_cells = cell_rows * cell_cols;
 
- 
+
         std::vector<int> parent(total_cells);
         for (int i = 0; i < total_cells; ++i) parent[i] = i;
 
@@ -492,14 +841,14 @@ void Keyboard(unsigned char key, int x, int y)
             if (px != py) parent[px] = py;
             };
 
-    
+
         struct Wall {
             int c1, c2;
             int wi, wj;
         };
         std::vector<Wall> walls;
 
-      
+
         for (int cr = 0; cr < cell_rows; ++cr) {
             for (int cc = 0; cc < cell_cols - 1; ++cc) {
                 int c1 = cr * cell_cols + cc;
@@ -510,7 +859,7 @@ void Keyboard(unsigned char key, int x, int y)
             }
         }
 
-     
+
         for (int cr = 0; cr < cell_rows - 1; ++cr) {
             for (int cc = 0; cc < cell_cols; ++cc) {
                 int c1 = cr * cell_cols + cc;
@@ -521,7 +870,7 @@ void Keyboard(unsigned char key, int x, int y)
             }
         }
 
-     
+
         for (const auto& w : walls) {
             if (w.wi < n && w.wj < m) {  // 안전 체크
                 CubeModels[w.wi][w.wj].height = 4.0f;
@@ -556,30 +905,38 @@ void Keyboard(unsigned char key, int x, int y)
             CubeModels[n - 2][m - 1].height = -0.1f;
         }
 
-        std::cout << "완벽한 미로 생성 완료! (짝수 " << n << "x" << m << "도 고립 0개 보장, goto 0개)" << std::endl;
+        // 미로 재생성 후 OBB 재계산
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                if (CubeModels[i][j].renderFlag) {
+                    ComputeLocalOBB(CubeModels[i][j]);
+                }
+            }
+        }
+
         break;
     }
     case 'v': // 육면체들이 움직임이 멈추고 낮은 높이로 변함
-		mFlag = !mFlag;
-        for(int i = 0; i < n; ++i) {
+        mFlag = !mFlag;
+        for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 CubeModels[i][j].height = 2.0f;
             }
-		}
+        }
         break;
     case 's': // 미로에 객체 생성
-		break;
-	case '-': // 육면체 스피드 감소
+        break;
+    case '-': // 육면체 스피드 감소
         CubeSpeedDown();
         break;
-	case '=': // 육면체 스피드 증가
+    case '=': // 육면체 스피드 증가
         CubeSpeedUp();
         break;
     case '1': // 객체 시점 (1인칭)
-		break;
-	case '3': // 객체 시점 (3인칭)
         break;
-	case 'c': // 모든 값 초기화
+    case '3': // 객체 시점 (3인칭)
+        break;
+    case 'c': // 모든 값 초기화
         break;
     case 'q':
         exit(0);
@@ -587,11 +944,33 @@ void Keyboard(unsigned char key, int x, int y)
     }
 }
 
+// --- 추가된 부분: 플레이어 충돌 검사 헬퍼 함수 ---
+// (Timer에서 미로 큐브 OBB가 이미 업데이트 되었다고 가정)
+bool CheckPlayerCollision(const ExtendedModel& playerModel) {
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (CubeModels[i][j].renderFlag && check_obb_collision(playerModel, CubeModels[i][j])) {
+                return true; // 하나라도 충돌하면 즉시 true 반환
+            }
+        }
+    }
+    return false; // 충돌 없음
+}
+
 void Timer(int value)
 {
     float delta = 1.0f / 60.0f;
     cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
 
+    // 0. 충돌 상태 플래그 초기화 (시각화용)
+    Player.is_colliding = false;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            CubeModels[i][j].is_colliding = false;
+        }
+    }
+
+    // 1. 미로 큐브 애니메이션 (높이 변경) - (사용자 코드 유지)
     if (!enterAnimation)
     {
         if (!mFlag)
@@ -610,18 +989,61 @@ void Timer(int value)
                 }
             }
         }
-       
     }
     else
     {
-        if (yMoveValue <= 0.0f)
-        {
-            yMoveValue += 2.0f * delta;
+        if (yMoveValue <= 0.0f) { yMoveValue += 2.0f * delta; }
+        else { yMoveValue = -5.0f; enterAnimation = false; }
+    }
+
+
+    // 2. 미로 큐브 OBB 업데이트 (변경된 높이/애니메이션 반영)
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (CubeModels[i][j].renderFlag) {
+                update_world_obb(CubeModels[i][j]);
+            }
         }
-        else
-        {
-            yMoveValue = -5.0f;
-            enterAnimation = false;
+    }
+
+    // --- 수정된 부분: 플레이어 이동 및 충돌 응답 (Timer로 이동) ---
+    float playerMoveSpeed = 3.0f; // 초당 이동 속도
+    if (glm::length(playerMoveDir) > 0.01f) {
+        glm::vec3 desiredMove = glm::normalize(playerMoveDir) * playerMoveSpeed * delta;
+        glm::vec3 oldPos = playerPosition;
+
+        // 3a. X축 이동 시도
+        glm::vec3 tryXPos = oldPos + glm::vec3(desiredMove.x, 0, 0);
+        Player.center = tryXPos;
+        Player.height = 0.5f; // --- 수정: 스케일 0.5 ---
+        update_world_obb(Player); // X 이동 후의 OBB
+        if (!CheckPlayerCollision(Player)) {
+            playerPosition.x = tryXPos.x; // 충돌 안하면 X 이동
+        }
+
+        // 3b. Z축 이동 시도 (X축이 이동했을 수도 있는 위치에서)
+        glm::vec3 tryZPos = playerPosition + glm::vec3(0, 0, desiredMove.z);
+        Player.center = tryZPos;
+        Player.height = 0.5f; // --- 수정: 스케일 0.5 ---
+        update_world_obb(Player); // Z 이동 후의 OBB
+        if (!CheckPlayerCollision(Player)) {
+            playerPosition.z = tryZPos.z; // 충돌 안하면 Z 이동
+        }
+    }
+    // --- 수정 끝 ---
+
+    // 4. 최종 플레이어 OBB 업데이트 (시각화 및 다음 프레임용)
+    Player.center = playerPosition;
+    Player.height = 0.5f; // --- 수정: 스케일 0.5 ---
+    update_world_obb(Player);
+
+    // 5. 충돌 플래그 설정 (시각화용)
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (CubeModels[i][j].renderFlag && check_obb_collision(Player, CubeModels[i][j])) {
+                Player.is_colliding = true;
+                CubeModels[i][j].is_colliding = true;
+            }
         }
     }
 
@@ -634,10 +1056,43 @@ void Mouse(int button, int state, int x, int y)
 
 }
 
+// --- 수정된 부분: SpecialKeyboard (방향키만 설정) ---
 void SpecialKeyboard(int key, int x, int y)
 {
-
+    float moveSpeed = 1.0f; // 방향 설정용
+    if (key == GLUT_KEY_UP) {
+        playerMoveDir.z = -moveSpeed; // -z 방향
+    }
+    else if (key == GLUT_KEY_DOWN) {
+        playerMoveDir.z = moveSpeed; // +z 방향
+    }
+    else if (key == GLUT_KEY_LEFT) {
+        playerMoveDir.x = -moveSpeed;
+    }
+    else if (key == GLUT_KEY_RIGHT) {
+        playerMoveDir.x = moveSpeed;
+    }
+    // glutPostRedisplay(); // Timer가 매 프레임 호출하므로 필요 없음
 }
+// --- 수정 끝 ---
+
+// --- 추가된 부분: SpecialKeyboardUp (키 떼면 멈춤) ---
+void SpecialKeyboardUp(int key, int x, int y)
+{
+    if (key == GLUT_KEY_UP) {
+        if (playerMoveDir.z < 0) playerMoveDir.z = 0.0f;
+    }
+    else if (key == GLUT_KEY_DOWN) {
+        if (playerMoveDir.z > 0) playerMoveDir.z = 0.0f;
+    }
+    else if (key == GLUT_KEY_LEFT) {
+        if (playerMoveDir.x < 0) playerMoveDir.x = 0.0f;
+    }
+    else if (key == GLUT_KEY_RIGHT) {
+        if (playerMoveDir.x > 0) playerMoveDir.x = 0.0f;
+    }
+}
+// --- 추가 끝 ---
 
 void Motion(int x, int y)
 {
