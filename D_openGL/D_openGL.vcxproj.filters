@@ -156,6 +156,9 @@
     <ClCompile Include="Prac.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="S23.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
