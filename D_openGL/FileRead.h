@@ -1,7 +1,10 @@
+#ifndef FILEREAD_H
+#define FILEREAD_H
+
 #include <stdlib.h>
 #include <stdio.h>
 
-char* filetobuf(const char* file)
+inline char* filetobuf(const char* file)
 {
 	FILE* fptr;
 	long length;
@@ -19,3 +22,5 @@ char* filetobuf(const char* file)
 	buf[length] = 0; // Null terminator
 	return buf; // Return the buffer
 }
+
+#endif // FILEREAD_H

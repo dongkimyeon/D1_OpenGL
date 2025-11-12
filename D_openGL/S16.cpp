@@ -55,21 +55,7 @@ float targetModelRotX = 0.0f; // 타겟 X축 회전 각도
 
 float interpSpeed = 10.0f; // 선형 보간 속도
 
-// Catmull-Rom 스플라인 관련 전역 변수
-bool cameraWalk = false; // 카메라 워크 토글
-float splineTime = 0.0f; // 스플라인 시간
-float splineSpeed = 1.0f; // 스플라인 속도
-std::vector<glm::vec3> controlPoints; // 제어점
 
-glm::vec4 lAmb = glm::vec4(0.1, 0.3, 0.2, 1);	//빛의 ambient 값
-glm::vec4 lDif = glm::vec4(0.3, 0.5, 0.3, 1);	//빛의 diffuse 값
-glm::vec4 lSpc = glm::vec4(1, 1, 1, 1);		//빛의 specular 값
-
-//float spec = ?f; // 재질의 specular 강도 (0~1)
-glm::vec4 mAmb = glm::vec4(0.1, 0.4, 0.1, 1);	//재질의 ambient 값
-glm::vec4 mDif = glm::vec4(0.8, 0.8, 0.8, 1);	//재질의 diffuse 값
-//gllm::vec4 mSpc = glm::vec4(spec, spec, spec, 1);	//재질의 specular 값
-float mShininess = 50.0f; // 재질의 sh값(게임수학)
 
 int main(int argc, char** argv) {
 	srand(static_cast<unsigned>(time(0))); // 랜덤 시드 초기화
@@ -113,16 +99,7 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-void InitSpline() {
-	controlPoints = {
-		glm::vec3(5.0f, 2.0f, 5.0f),
-		glm::vec3(5.0f, 2.0f, -5.0f),
-		glm::vec3(-5.0f, 2.0f, -5.0f),
-		glm::vec3(-5.0f, 2.0f, 5.0f),
-		glm::vec3(0.0f, 6.0f, 0.0f)
-	};
-	std::cout << "Catmull-Rom 스플라인 제어점 초기화 완료" << std::endl;
-}
+
 
 glm::vec3 CatmullRomSpline(float t, const std::vector<glm::vec3>& points) {
 	size_t n = points.size();
@@ -466,14 +443,14 @@ void Keyboard(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 'd':
-		if (!cameraWalk) {
+		
 			targetCameraAngle -= glm::radians(5.0f); // 카메라 각도 5도 감소
-		}
+		
 		break;
 	case 'a':
-		if (!cameraWalk) {
+		
 			targetCameraAngle += glm::radians(5.0f); // 카메라 각도 5도 증가
-		}
+		
 		break;
 	case 'w':
 		wireMode = !wireMode;
@@ -504,16 +481,6 @@ void Keyboard(unsigned char key, int x, int y)
 		glDeleteBuffers(1, &VBO);
 		glDeleteBuffers(1, &EBO);
 		InitBuffers();  // 모델 버퍼 재초기화 (축은 유지)
-		break;
-	case 'c': // 'c' 키로 카메라 워크 토글
-		cameraWalk = !cameraWalk;
-		if (cameraWalk) {
-			splineTime = 0.0f; // 재시작
-			std::cout << "카메라 워크 시작 (Catmull-Rom 스플라인)" << std::endl;
-		}
-		else {
-			std::cout << "카메라 워크 중지" << std::endl;
-		}
 		break;
 	case 'x':
 		xRotateFlag = !xRotateFlag;
@@ -547,7 +514,7 @@ void Keyboard(unsigned char key, int x, int y)
 	glutPostRedisplay();
 }
 
-// 특수 키(화살표) 처리 함수: 도형 회전
+
 void SpecialKeyboard(int key, int x, int y)
 {
 	switch (key)
@@ -574,12 +541,7 @@ void SpecialKeyboard(int key, int x, int y)
 void Timer(int value) {
 	float delta = 1.0f / 60.0f; // 고정 타임스텝 (~60 FPS)
 
-	// 카메라 업데이트
-	if (cameraWalk) {
-		splineTime += delta * splineSpeed;
-		
-		cameraPos = CatmullRomSpline(splineTime, controlPoints);
-	}
+
 	else {
 		// 기존 각도 기반 카메라 업데이트
 		cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
@@ -605,6 +567,7 @@ void Timer(int value) {
 		else
 			targetModelRotY -= 0.05f;
 	}
+
 	modelPos = glm::mix(modelPos, targetModelPos, interpSpeed * delta);
 	modelRotX = glm::mix(modelRotX, targetModelRotX, interpSpeed * delta);
 	modelRotY = glm::mix(modelRotY, targetModelRotY, interpSpeed * delta);

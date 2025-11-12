@@ -24,9 +24,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <algorithm>
-#include <algorithm>
 #include "FileRead.h"
 #include "ObjRead.h"
+#include "Input.h"
 
 //#include <assimp/Importer.hpp>
 //#include <assimp/cimport.h>

@@ -1,4 +1,4 @@
-#include "CommonInclude.h"
+ï»¿#include "CommonInclude.h"
 
 std::uniform_real_distribution <float> randomSpeed(0.2f, 1.5f);
 std::uniform_real_distribution <float> randomMaxHeight(4.0f, 6.0f);
@@ -6,28 +6,28 @@ std::uniform_real_distribution <float> randomMinHeight(1.0f, 2.0f);
 std::uniform_int_distribution <int> randomInt(0, 1);
 std::random_device rd;
 
-//±¸Á¶Ã¼
+//êµ¬ì¡°ì²´
 struct OBB {
-    glm::vec3 center = glm::vec3(0.0f);     // OBBÀÇ Áß½É (¿ùµå ÁÂÇ¥°è)
-    glm::vec3 u[3];                         // OBBÀÇ ¼¼ Á¤±ÔÁ÷±³ Ãà (u[0]=xÃà, u[1]=yÃà, u[2]=zÃà)
-    glm::vec3 half_length = glm::vec3(0.0f); // °¢ ÃàÀ» µû¸¥ Áß½ÉÀ¸·ÎºÎÅÍÀÇ ¹İÄ¡¼ö (Local Space)
+    glm::vec3 center = glm::vec3(0.0f);     // OBBì˜ ì¤‘ì‹¬ (ì›”ë“œ ì¢Œí‘œê³„)
+    glm::vec3 u[3];                         // OBBì˜ ì„¸ ì •ê·œì§êµ ì¶• (u[0]=xì¶•, u[1]=yì¶•, u[2]=zì¶•)
+    glm::vec3 half_length = glm::vec3(0.0f); // ê° ì¶•ì„ ë”°ë¥¸ ì¤‘ì‹¬ìœ¼ë¡œë¶€í„°ì˜ ë°˜ì¹˜ìˆ˜ (Local Space)
 };
 
 struct ExtendedModel {
     Model baseModel;
-    glm::vec3 center; // ¹Ì·Î: ¿ùµå XZ À§Ä¡, ÇÃ·¹ÀÌ¾î: ¿ùµå XYZ À§Ä¡
+    glm::vec3 center; // ë¯¸ë¡œ: ì›”ë“œ XZ ìœ„ì¹˜, í”Œë ˆì´ì–´: ì›”ë“œ XYZ ìœ„ì¹˜
     GLuint indexCount = 0;
     std::vector<GLuint> indices;
     float minHeight = randomMinHeight(rd);
     float MaxHeight = randomMaxHeight(rd);
-    float height = minHeight; // ¹Ì·Î Å¥ºê: YÃà ³ôÀÌ, ÇÃ·¹ÀÌ¾î: ±ÕÀÏ ½ºÄÉÀÏ
+    float height = minHeight; // ë¯¸ë¡œ íë¸Œ: Yì¶• ë†’ì´, í”Œë ˆì´ì–´: ê· ì¼ ìŠ¤ì¼€ì¼
     float speed = randomSpeed(rd);
     bool renderFlag = true;
 
-    // OBB °ü·Ã Ãß°¡ Ç×¸ñ (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È)
-    OBB local_obb;  // ¸ğµ¨¸µ ½ÃÁ¡ÀÇ ·ÎÄÃ OBB (Model Matrix°¡ IdentityÀÏ ¶§)
-    OBB world_obb;  // ÇöÀç ÇÁ·¹ÀÓÀÇ ¿ùµå OBB (Model Matrix Àû¿ë ÈÄ)
-    bool is_colliding = false; // Ãæµ¹ »óÅÂ
+    // OBB ê´€ë ¨ ì¶”ê°€ í•­ëª© (ì²« ë²ˆì§¸ íŒŒì¼ì—ì„œ ê°€ì ¸ì˜´)
+    OBB local_obb;  // ëª¨ë¸ë§ ì‹œì ì˜ ë¡œì»¬ OBB (Model Matrixê°€ Identityì¼ ë•Œ)
+    OBB world_obb;  // í˜„ì¬ í”„ë ˆì„ì˜ ì›”ë“œ OBB (Model Matrix ì ìš© í›„)
+    bool is_colliding = false; // ì¶©ëŒ ìƒíƒœ
 };
 
 void MakeVertexShaders();
@@ -42,58 +42,108 @@ void Timer(int value);
 void Mouse(int button, int state, int x, int y);
 void SpecialKeyboard(int key, int x, int y);
 void Motion(int x, int y);
-void update_world_obb(ExtendedModel& model); // OBB ¾÷µ¥ÀÌÆ® ÇÔ¼ö (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È)
-bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& modelB); // OBB Ãæµ¹ °Ë»ç (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È)
-bool is_separated(const OBB& a, const OBB& b, const glm::vec3& axis); // ºĞ¸® °Ë»ç (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È)
-void ComputeLocalOBB(ExtendedModel& model); // ·ÎÄÃ OBB °è»ê ÇÔ¼ö (»õ·Î Ãß°¡)
-void RenderOBB(const OBB& obb, glm::vec3 color); // OBB ·»´õ¸µ ÇÔ¼ö (»õ·Î Ãß°¡)
+void update_world_obb(ExtendedModel& model); 
+bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& modelB); 
+bool is_separated(const OBB& a, const OBB& b, const glm::vec3& axis);
+void ComputeLocalOBB(ExtendedModel& model); 
+//void RenderOBB(const OBB& obb, glm::vec3 color); 
+void ResetAll(); // ëª¨ë“  íë¸Œì™€ í”Œë ˆì´ì–´ ì´ˆê¸°í™” í•¨ìˆ˜
 
-// --- Ãß°¡µÈ ºÎºĞ: Å° ¶¼±â Äİ¹é ¹× Ãæµ¹ ÇïÆÛ ---
-void SpecialKeyboardUp(int key, int x, int y);
+
 bool CheckPlayerCollision(const ExtendedModel& playerModel);
-// --- Ãß°¡ ³¡ ---
+
+
+
+bool IsBlockingView(const glm::vec3& cubeCenter, const glm::vec3& cameraPos, const glm::vec3& playerPos) {
+
+    glm::vec3 camToPlayer = playerPos - cameraPos;
+    float camToPlayerDist = glm::length(camToPlayer);
+
+    if (camToPlayerDist < 0.01f) return false;
+
+    glm::vec3 camToPlayerDir = glm::normalize(camToPlayer);
+
+
+    glm::vec3 camToCube = cubeCenter - cameraPos;
+    float camToCubeDist = glm::length(camToCube);
+
+
+    if (camToCubeDist >= camToPlayerDist) return false;
+
+
+    float projLength = glm::dot(camToCube, camToPlayerDir);
+
+
+    if (projLength < 0.0f) return false;
+
+
+    glm::vec3 projPoint = cameraPos + camToPlayerDir * projLength;
+
+
+    float distToCube = glm::length(cubeCenter - projPoint);
+
+ 
+    float threshold = 0.8f;
+
+    return distToCube < threshold;
+}
 
 GLint width, height;
 GLuint shaderProgramID;
 GLuint vertexShader;
 GLuint fragmentShader;
-//¼±Çüº¸°£ ¼Óµµ
+//ì„ í˜•ë³´ê°„ ì†ë„
 float interpSpeed = 10.0f;
 
-// ¹Ì·Î VAO, VBO, EBO
+float playerScale = 0.2f;
+// ë¯¸ë¡œ VAO, VBO, EBO
 GLuint MazeVAO, MazeVBO, MazeEBO;
-// ÇÃ·¹ÀÌ¾î VAO, VBO, EBO
+// í”Œë ˆì´ì–´ VAO, VBO, EBO
 GLuint PlayerVAO, PlayerVBO, PlayerEBO;
-int n = 0; // Å¥ºê °³¼ö 
+int n = 0; // íë¸Œ ê°œìˆ˜ 
 int m = 0;
 
 glm::vec3 mazeMoveVec = glm::vec3(0.0f, 0.0f, 0.0f);
 
-// n x m Å¥ºê ¸ğµ¨ ¹è¿­
+// n x m íë¸Œ ëª¨ë¸ ë°°ì—´
 ExtendedModel** CubeModels;
 ExtendedModel Player;
 
-//ÃÊ±â ½ÃÀÛ ¾Ö´Ï¸ŞÀÌ¼Ç °ü·Ã º¯¼ö 
+//ì´ˆê¸° ì‹œì‘ ì• ë‹ˆë©”ì´ì…˜ ê´€ë ¨ ë³€ìˆ˜ 
 bool enterAnimation = true;
 float yMoveValue = -5.0f;
 
-//Ä«¸Ş¶ó °ü·Ã º¯¼ö 
+//ì¹´ë©”ë¼ ê´€ë ¨ ë³€ìˆ˜ 
 float cameraAngle = glm::atan(1.0f);
 float targetCameraAngle = glm::atan(1.0f);
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 23.5f, 23.5f);
 glm::vec3 centerPoint = glm::vec3(0.0f, 0.0f, 0.0f);
 
-//¸í·É¾î º¯¼ö
+
+int lastMouseX = 0;          // ë§ˆì§€ë§‰ ë§ˆìš°ìŠ¤ X ìœ„ì¹˜
+int lastMouseY = 0;          // ë§ˆì§€ë§‰ ë§ˆìš°ìŠ¤ Y ìœ„ì¹˜
+
+//ëª…ë ¹ì–´ ë³€ìˆ˜
 bool mFlag = false;
 bool oFlag = true;
+bool sFlag = false;
+bool rFlag = false;
 
-// ÇÃ·¹ÀÌ¾î À§Ä¡ (¿òÁ÷ÀÓ ±¸ÇöÀ» À§ÇØ Ãß°¡, ÃÊ±â À§Ä¡ ¼³Á¤)
-glm::vec3 playerPosition = glm::vec3(0.0f, 5.0f, 0.0f); // ÇÃ·¹ÀÌ¾î ¿ùµå À§Ä¡
-// --- Ãß°¡µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î ÀÌµ¿ ¹æÇâ º¤ÅÍ ---
+// í”Œë ˆì´ì–´ ìœ„ì¹˜ 
+glm::vec3 playerPosition = glm::vec3(0.0f, 10.0f, 0.0f); // í”Œë ˆì´ì–´ ì›”ë“œ ìœ„ì¹˜
+
+// --- í”Œë ˆì´ì–´ ì´ë™ ë°©í–¥ ë²¡í„° ---
 glm::vec3 playerMoveDir = glm::vec3(0.0f);
-// --- Ãß°¡ ³¡ ---
+glm::vec3 playerFacing = glm::vec3(0.0f, 0.0f, -1.0f); // í”Œë ˆì´ì–´ê°€ ë°”ë¼ë³´ëŠ” ë°©í–¥ (ì´ˆê¸°: -Z ë°©í–¥)
+float playerYaw = 0.0f;
 
+
+float groundY = 1.0f; // ì§€ë©´ Y ì¢Œí‘œ
+float gravity = 9.8f; // ì¤‘ë ¥ ê°€ì†ë„
+
+
+int cameraMode = 0; // 0: ì²˜ìŒëª¨ë“œ 1: ê°ì²´ 1ì¸ì¹­ ëª¨ë“œ 2: ê°ì²´ 3ì¸ì¹­ ëª¨ë“œ 
 
 void CubeSpeedUp() {
     for (int i = 0; i < n; ++i) {
@@ -113,7 +163,7 @@ void CubeSpeedDown() {
     }
 }
 void InitBuffers() {
-    const GLsizei stride = 6 * sizeof(GLfloat);  // À§Ä¡(3) + »ö»ó(3)
+    const GLsizei stride = 6 * sizeof(GLfloat);  // ìœ„ì¹˜(3) + ìƒ‰ìƒ(3)
 
     glGenVertexArrays(1, &MazeVAO);
     glBindVertexArray(MazeVAO);
@@ -143,14 +193,14 @@ void InitBuffers() {
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
 
-    // --- Ãß°¡µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î ¸ğµ¨ µ¥ÀÌÅÍ¸¦ VBO/EBO¿¡ ÇÑ ¹ø ¹öÆÛ¸µ ---
+    // --- ì¶”ê°€ëœ ë¶€ë¶„: í”Œë ˆì´ì–´ ëª¨ë¸ ë°ì´í„°ë¥¼ VBO/EBOì— í•œ ë²ˆ ë²„í¼ë§ ---
     std::vector<GLfloat> playerVertexData;
     std::vector<GLuint> playerIndices;
     GLuint playerVertexBase = 0;
 
     Model& pMdl = Player.baseModel;
-    glm::vec3 pCenter = Player.center; // Player.center´Â CalculateModelCenter·Î °è»êµÈ ·ÎÄÃ Áß½É
-    // ÇÃ·¹ÀÌ¾î »ö»ó (¿¹: Èò»ö)
+    glm::vec3 pCenter = Player.center; // Player.centerëŠ” CalculateModelCenterë¡œ ê³„ì‚°ëœ ë¡œì»¬ ì¤‘ì‹¬
+    // í”Œë ˆì´ì–´ ìƒ‰ìƒ (ì˜ˆ: í°ìƒ‰)
     float pr = 1.0f; float pg = 1.0f; float pb = 1.0f;
 
     for (size_t v = 0; v < pMdl.vertex_count; ++v) {
@@ -171,23 +221,23 @@ void InitBuffers() {
         playerIndices.push_back(static_cast<GLuint>(pMdl.faces[f].v2) + playerVertexBase);
         playerIndices.push_back(static_cast<GLuint>(pMdl.faces[f].v3) + playerVertexBase);
     }
-    // ±×¸± ÀÎµ¦½º °³¼ö ÀúÀå
+    // ê·¸ë¦´ ì¸ë±ìŠ¤ ê°œìˆ˜ ì €ì¥
     Player.indexCount = playerIndices.size();
 
-    // µ¥ÀÌÅÍ ¹öÆÛ¸µ
+    // ë°ì´í„° ë²„í¼ë§
     glBindVertexArray(PlayerVAO);
     glBindBuffer(GL_ARRAY_BUFFER, PlayerVBO);
     glBufferData(GL_ARRAY_BUFFER, playerVertexData.size() * sizeof(GLfloat), playerVertexData.data(), GL_STATIC_DRAW); // STATIC_DRAW
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, PlayerEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, playerIndices.size() * sizeof(GLuint), playerIndices.data(), GL_STATIC_DRAW); // STATIC_DRAW
     glBindVertexArray(0);
-    // --- ÇÃ·¹ÀÌ¾î µ¥ÀÌÅÍ ¹öÆÛ¸µ ³¡ ---
+    // --- í”Œë ˆì´ì–´ ë°ì´í„° ë²„í¼ë§ ë ---
 }
 
 void main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-    width = 800; // ÀûÀıÇÑ °ªÀ¸·Î ÃÊ±âÈ­     
+    width = 800; // ì ì ˆí•œ ê°’ìœ¼ë¡œ ì´ˆê¸°í™”     
     height = 600;
     glutInitWindowPosition(100, 100);
     glutInitWindowSize(width, height);
@@ -196,9 +246,9 @@ void main(int argc, char** argv) {
     glewExperimental = GL_TRUE;
     glewInit();
 
-    MakeVertexShaders(); // ¹öÅØ½º ¼ÎÀÌ´õ »ı¼º
-    MakeFragmentShaders(); // ÇÁ·¡±×¸ÕÆ® ¼ÎÀÌ´õ »ı¼º
-    shaderProgramID = MakeShaderProgram(); // ¼ÎÀÌ´õ ÇÁ·Î±×·¥ »ı¼º
+    MakeVertexShaders(); // ë²„í…ìŠ¤ ì…°ì´ë” ìƒì„±
+    MakeFragmentShaders(); // í”„ë˜ê·¸ë¨¼íŠ¸ ì…°ì´ë” ìƒì„±
+    shaderProgramID = MakeShaderProgram(); // ì…°ì´ë” í”„ë¡œê·¸ë¨ ìƒì„±
 
     glutDisplayFunc(DrawScene);
     glutReshapeFunc(Reshape);
@@ -206,26 +256,24 @@ void main(int argc, char** argv) {
     glutSpecialFunc(SpecialKeyboard);
     glutTimerFunc(16, Timer, 0);
     glutMouseFunc(Mouse);
-    // --- Ãß°¡µÈ ºÎºĞ: Å° ¶¼±â Äİ¹é µî·Ï ---
-    glutSpecialUpFunc(SpecialKeyboardUp);
-    // --- Ãß°¡ ³¡ ---
+	glutPassiveMotionFunc(Motion);
 
+
+	Input::Initialize();
     std::cin >> n >> m;
-    //n x m Å¥ºê ¸ğµ¨ µ¿Àû ÇÒ´ç
+    //n x m íë¸Œ ëª¨ë¸ ë™ì  í• ë‹¹
     CubeModels = new ExtendedModel * [n];
     for (int i = 0; i < n; ++i) {
         CubeModels[i] = new ExtendedModel[m];
         for (int j = 0; j < m; ++j) {
             read_obj_file("cube.obj", &CubeModels[i][j].baseModel);
-
-            // --- ¼öÁ¤µÈ ºÎºĞ: center¸¦ ¿ùµå XZ À§Ä¡·Î »ç¿ë ---
-            // CubeModels[i][j].center = CalculateModelCenter(&CubeModels[i][j].baseModel); // ·ÎÄÃ Áß½É (¾Æ¸¶ 0,0,0)
-            const float spacing = 1.0f; // DrawScene°ú µ¿ÀÏÇÑ °ª
+      
+            const float spacing = 1.0f;
             glm::vec3 worldTranslation = glm::vec3((j - (m - 1) / 2.0f) * spacing,
                 0.0f,
                 (i - (n - 1) / 2.0f) * spacing);
-            CubeModels[i][j].center = worldTranslation; // ¿ùµå XZ À§Ä¡ ÀúÀå
-            // --- ¼öÁ¤ ³¡ ---
+            CubeModels[i][j].center = worldTranslation; // ì›”ë“œ XZ ìœ„ì¹˜ ì €ì¥
+      
 
             CubeModels[i][j].speed = randomSpeed(rd);
             ComputeLocalOBB(CubeModels[i][j]);
@@ -233,24 +281,23 @@ void main(int argc, char** argv) {
     }
 
     read_obj_file("cube.obj", &Player.baseModel);
-    // --- ¼öÁ¤µÈ ºÎºĞ: Player.center´Â Timer¿¡¼­ playerPositionÀ¸·Î ¸Å¹ø ¾÷µ¥ÀÌÆ® ---
-    Player.center = CalculateModelCenter(&Player.baseModel); // ·ÎÄÃ Áß½É °è»ê (VBO »ı¼º ½Ã ÇÊ¿ä)
-    Player.speed = 1.0f;
-    // --- ¼öÁ¤µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î ½ºÄÉÀÏÀ» 0.5f·Î ¼³Á¤ ---
-    Player.height = 0.5f; // ÇÃ·¹ÀÌ¾î´Â height º¯¼ö¸¦ ±ÕÀÏ ½ºÄÉÀÏ·Î »ç¿ë
-    // --- ¼öÁ¤ ³¡ ---
 
-    // ÇÃ·¹ÀÌ¾î OBB ÃÊ±âÈ­
+    Player.center = CalculateModelCenter(&Player.baseModel); 
+    Player.speed = 1.0f;
+    Player.height = playerScale;
+
+
+    // í”Œë ˆì´ì–´ OBB ì´ˆê¸°í™”
     ComputeLocalOBB(Player);
-    InitBuffers(); // ¹öÆÛ ÃÊ±âÈ­
+    InitBuffers(); // ë²„í¼ ì´ˆê¸°í™”
     glutMainLoop();
 }
 
-// ·ÎÄÃ OBB °è»ê ÇÔ¼ö (Ã¹ ¹øÂ° ÆÄÀÏÀÇ AABB ±â¹İ OBB ÃÊ±âÈ­ ·ÎÁ÷ Àû¿ë)
+
 void ComputeLocalOBB(ExtendedModel& model) {
     if (model.baseModel.vertex_count == 0) return;
 
-    // AABB °è»ê (¸ğµç Á¤Á¡ ´ë»ó)
+    // AABB ê³„ì‚° (ëª¨ë“  ì •ì  ëŒ€ìƒ)
     glm::vec3 min_v = glm::vec3(FLT_MAX);
     glm::vec3 max_v = glm::vec3(-FLT_MAX);
     for (size_t i = 0; i < model.baseModel.vertex_count; ++i) {
@@ -263,15 +310,13 @@ void ComputeLocalOBB(ExtendedModel& model) {
         max_v.z = glm::max(max_v.z, v.z);
     }
 
-    // OBB ¼³Á¤ (Å¥ºêÀÌ¹Ç·Î Ãà Á¤·Ä)
-    glm::vec3 local_center = (min_v + max_v) * 0.5f; // (Âü°í¿ë: obj ÆÄÀÏÀÇ AABB Áß½É)
+    // OBB ì„¤ì • 
+    glm::vec3 local_center = (min_v + max_v) * 0.5f; // (ì°¸ê³ ìš©: obj íŒŒì¼ì˜ AABB ì¤‘ì‹¬)
     glm::vec3 local_half_length = (max_v - min_v) * 0.5f;
 
-    // --- ¼öÁ¤µÈ ºÎºĞ ---
-    // VBO¸¦ (0,0,0) Áß½ÉÀ¸·Î ¸¸µé¾úÀ¸¹Ç·Î(vert.x - localCenter.x),
-    // OBBÀÇ ·ÎÄÃ Áß½Éµµ (0,0,0)À¸·Î °­Á¦ÇØ¾ß ·»´õ¸µ°ú ÀÏÄ¡ÇÕ´Ï´Ù.
+  
     model.local_obb.center = glm::vec3(0.0f);
-    // --- ¼öÁ¤ ³¡ ---
+
 
     model.local_obb.half_length = local_half_length;
     model.local_obb.u[0] = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -279,76 +324,106 @@ void ComputeLocalOBB(ExtendedModel& model) {
     model.local_obb.u[2] = glm::vec3(0.0f, 0.0f, 1.0f);
 }
 
-// OBB ·»´õ¸µ ÇÔ¼ö: 8 ²ÀÁşÁ¡À» °è»êÇÏ°í ¼±À¸·Î ±×¸³´Ï´Ù.
-void RenderOBB(const OBB& obb, glm::vec3 color) {
-    // 8 ²ÀÁşÁ¡ °è»ê
-    glm::vec3 corners[8];
-    corners[0] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
-    corners[1] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
-    corners[2] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
-    corners[3] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
-    corners[4] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
-    corners[5] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
-    corners[6] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
-    corners[7] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+// OBB ë Œë”ë§ í•¨ìˆ˜
+//void RenderOBB(const OBB& obb, glm::vec3 color) {
+//    // 8 ê¼­ì§“ì  ê³„ì‚°
+//    glm::vec3 corners[8];
+//    corners[0] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+//    corners[1] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+//    corners[2] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+//    corners[3] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] - obb.half_length.z * obb.u[2];
+//    corners[4] = obb.center - obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+//    corners[5] = obb.center + obb.half_length.x * obb.u[0] - obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+//    corners[6] = obb.center + obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+//    corners[7] = obb.center - obb.half_length.x * obb.u[0] + obb.half_length.y * obb.u[1] + obb.half_length.z * obb.u[2];
+//
+//    // ì„  ë°ì´í„°: 12 ì—ì§€ (24 ë²„í…ìŠ¤, ê° ì—ì§€ ì–‘ ë)
+//    std::vector<GLfloat> lineVertices;
+//    // ì—ì§€ ì •ì˜: (0-1, 1-2, 2-3, 3-0, 4-5, 5-6, 6-7, 7-4, 0-4, 1-5, 2-6, 3-7)
+//    std::vector<std::pair<int, int>> edges = {
+//        {0, 1}, {1, 2}, {2, 3}, {3, 0},
+//        {4, 5}, {5, 6}, {6, 7}, {7, 4},
+//        {0, 4}, {1, 5}, {2, 6}, {3, 7}
+//    };
+//
+//    for (const auto& edge : edges) {
+//        // ì‹œì‘ì 
+//        lineVertices.push_back(corners[edge.first].x);
+//        lineVertices.push_back(corners[edge.first].y);
+//        lineVertices.push_back(corners[edge.first].z);
+//        lineVertices.push_back(color.x);
+//        lineVertices.push_back(color.y);
+//        lineVertices.push_back(color.z);
+//        // ëì 
+//        lineVertices.push_back(corners[edge.second].x);
+//        lineVertices.push_back(corners[edge.second].y);
+//        lineVertices.push_back(corners[edge.second].z);
+//        lineVertices.push_back(color.x);
+//        lineVertices.push_back(color.y);
+//        lineVertices.push_back(color.z);
+//    }
+//
+//    // ì„ì‹œ VAO/VBO ìƒì„± ë° ë°”ì¸ë”© (ê°„ë‹¨ êµ¬í˜„, ë§¤ í”„ë ˆì„ ì¬ìƒì„±)
+//    GLuint tempVAO, tempVBO;
+//    glGenVertexArrays(1, &tempVAO);
+//    glBindVertexArray(tempVAO);
+//    glGenBuffers(1, &tempVBO);
+//    glBindBuffer(GL_ARRAY_BUFFER, tempVBO);
+//    glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(GLfloat), lineVertices.data(), GL_STATIC_DRAW);
+//
+//    const GLsizei stride = 6 * sizeof(GLfloat);
+//    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
+//    glEnableVertexAttribArray(1);
+//
+//    // ì„  ê·¸ë¦¬ê¸° (GL_LINES, 24 ë²„í…ìŠ¤)
+//    glDrawArrays(GL_LINES, 0, 24);
+//
+//    // ì •ë¦¬
+//    glBindVertexArray(0);
+//    glDeleteBuffers(1, &tempVBO);
+//    glDeleteVertexArrays(1, &tempVAO);
+//}
 
-    // ¼± µ¥ÀÌÅÍ: 12 ¿¡Áö (24 ¹öÅØ½º, °¢ ¿¡Áö ¾ç ³¡)
-    std::vector<GLfloat> lineVertices;
-    // ¿¡Áö Á¤ÀÇ: (0-1, 1-2, 2-3, 3-0, 4-5, 5-6, 6-7, 7-4, 0-4, 1-5, 2-6, 3-7)
-    std::vector<std::pair<int, int>> edges = {
-        {0, 1}, {1, 2}, {2, 3}, {3, 0},
-        {4, 5}, {5, 6}, {6, 7}, {7, 4},
-        {0, 4}, {1, 5}, {2, 6}, {3, 7}
-    };
-
-    for (const auto& edge : edges) {
-        // ½ÃÀÛÁ¡
-        lineVertices.push_back(corners[edge.first].x);
-        lineVertices.push_back(corners[edge.first].y);
-        lineVertices.push_back(corners[edge.first].z);
-        lineVertices.push_back(color.x);
-        lineVertices.push_back(color.y);
-        lineVertices.push_back(color.z);
-        // ³¡Á¡
-        lineVertices.push_back(corners[edge.second].x);
-        lineVertices.push_back(corners[edge.second].y);
-        lineVertices.push_back(corners[edge.second].z);
-        lineVertices.push_back(color.x);
-        lineVertices.push_back(color.y);
-        lineVertices.push_back(color.z);
+void ResetAll()
+{
+    // ëª¨ë“  íë¸Œì™€ í”Œë ˆì´ì–´ ì´ˆê¸°í™”
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            CubeModels[i][j].minHeight = randomMinHeight(rd);
+            CubeModels[i][j].MaxHeight = randomMaxHeight(rd);
+            CubeModels[i][j].height = CubeModels[i][j].minHeight;
+            CubeModels[i][j].speed = randomSpeed(rd);
+            CubeModels[i][j].renderFlag = true;
+        }
     }
+    playerPosition = glm::vec3(0.0f, 10.0f, 0.0f);
+    Player.center = CalculateModelCenter(&Player.baseModel);
+    cameraAngle = glm::atan(1.0f);
+    targetCameraAngle = glm::atan(1.0f);
+    cameraPos = glm::vec3(0.0f, 23.5f, 23.5f);
+    centerPoint = glm::vec3(0.0f, 0.0f, 0.0f);
+    playerMoveDir = glm::vec3(0.0f);
+    playerFacing = glm::vec3(0.0f, 0.0f, -1.0f);
+    playerYaw = 0.0f;
+    enterAnimation = true;
+	yMoveValue = -5.0f;
 
-    // ÀÓ½Ã VAO/VBO »ı¼º ¹× ¹ÙÀÎµù (°£´Ü ±¸Çö, ¸Å ÇÁ·¹ÀÓ Àç»ı¼º)
-    GLuint tempVAO, tempVBO;
-    glGenVertexArrays(1, &tempVAO);
-    glBindVertexArray(tempVAO);
-    glGenBuffers(1, &tempVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, tempVBO);
-    glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(GLfloat), lineVertices.data(), GL_STATIC_DRAW);
-
-    const GLsizei stride = 6 * sizeof(GLfloat);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-
-    // ¼± ±×¸®±â (GL_LINES, 24 ¹öÅØ½º)
-    glDrawArrays(GL_LINES, 0, 24);
-
-    // Á¤¸®
-    glBindVertexArray(0);
-    glDeleteBuffers(1, &tempVBO);
-    glDeleteVertexArrays(1, &tempVAO);
+     mFlag = false;
+     oFlag = true;
+     sFlag = false;
+     rFlag = false;
 }
 
 void MakeVertexShaders()
 {
     GLchar* vertexSource;
-    //--- ¹öÅØ½º ¼¼ÀÌ´õ ÀĞ¾î ÀúÀåÇÏ°í ÄÄÆÄÀÏ ÇÏ±â
-    //--- filetobuf: »ç¿ëÀÚÁ¤ÀÇ ÇÔ¼ö·Î ÅØ½ºÆ®¸¦ ÀĞ¾î¼­ ¹®ÀÚ¿­¿¡ ÀúÀåÇÏ´Â ÇÔ¼ö
+    //--- ë²„í…ìŠ¤ ì„¸ì´ë” ì½ì–´ ì €ì¥í•˜ê³  ì»´íŒŒì¼ í•˜ê¸°
+    //--- filetobuf: ì‚¬ìš©ìì •ì˜ í•¨ìˆ˜ë¡œ í…ìŠ¤íŠ¸ë¥¼ ì½ì–´ì„œ ë¬¸ìì—´ì— ì €ì¥í•˜ëŠ” í•¨ìˆ˜
     vertexSource = filetobuf("vertex3D.glsl");
     if (vertexSource == NULL) {
-        std::cerr << "ERROR: vertex.glsl ÆÄÀÏÀ» ÀĞÁö ¸øÇß½À´Ï´Ù." << std::endl;
+        std::cerr << "ERROR: vertex.glsl íŒŒì¼ì„ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤." << std::endl;
         return;
     }
     vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -360,7 +435,7 @@ void MakeVertexShaders()
     if (!result)
     {
         glGetShaderInfoLog(vertexShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: vertex shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: vertex shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
         return;
     }
 }
@@ -368,8 +443,8 @@ void MakeVertexShaders()
 void MakeFragmentShaders()
 {
     GLchar* fragmentSource;
-    //--- ÇÁ·¡±×¸ÕÆ® ¼¼ÀÌ´õ ÀĞ¾î ÀúÀåÇÏ°í ÄÄÆÄÀÏÇÏ±â
-    fragmentSource = filetobuf("fragment.glsl"); // ÇÁ·¡±×¼¼ÀÌ´õ ÀĞ¾î¿À±â
+    //--- í”„ë˜ê·¸ë¨¼íŠ¸ ì„¸ì´ë” ì½ì–´ ì €ì¥í•˜ê³  ì»´íŒŒì¼í•˜ê¸°
+    fragmentSource = filetobuf("fragment.glsl"); // í”„ë˜ê·¸ì„¸ì´ë” ì½ì–´ì˜¤ê¸°
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
     glCompileShader(fragmentShader);
@@ -379,7 +454,7 @@ void MakeFragmentShaders()
     if (!result)
     {
         glGetShaderInfoLog(fragmentShader, 512, NULL, errorLog);
-        std::cerr << "ERROR: frag_shader ÄÄÆÄÀÏ ½ÇÆĞ\n" << errorLog << std::endl;
+        std::cerr << "ERROR: frag_shader ì»´íŒŒì¼ ì‹¤íŒ¨\n" << errorLog << std::endl;
         return;
     }
 }
@@ -391,122 +466,122 @@ GLuint MakeShaderProgram()
     GLint result;
     GLchar errorLog[512];
 
-    shaderID = glCreateProgram(); //--- ¼¼ÀÌ´õ ÇÁ·Î±×·¥ ¸¸µé±â
-    glAttachShader(shaderID, vertexShader); //--- ¼¼ÀÌ´õ ÇÁ·Î±×·¥¿¡ ¹öÅØ½º ¼¼ÀÌ´õ ºÙÀÌ±â
-    glAttachShader(shaderID, fragmentShader); //--- ¼¼ÀÌ´õ ÇÁ·Î±×·¥¿¡ ÇÁ·¡±×¸ÕÆ® ¼¼ÀÌ´õ ºÙÀÌ±â
-    glLinkProgram(shaderID); //--- ¼¼ÀÌ´õ ÇÁ·Î±×·¥ ¸µÅ©ÇÏ±â
-    glDeleteShader(vertexShader); //--- ¼¼ÀÌ´õ °´Ã¼¸¦ ¼¼ÀÌ´õ ÇÁ·Î±×·¥¿¡ ¸µÅ©ÇßÀ½À¸·Î, ¼¼ÀÌ´õ °´Ã¼ ÀÚÃ¼´Â »èÁ¦ °¡´É
+    shaderID = glCreateProgram(); //--- ì„¸ì´ë” í”„ë¡œê·¸ë¨ ë§Œë“¤ê¸°
+    glAttachShader(shaderID, vertexShader); //--- ì„¸ì´ë” í”„ë¡œê·¸ë¨ì— ë²„í…ìŠ¤ ì„¸ì´ë” ë¶™ì´ê¸°
+    glAttachShader(shaderID, fragmentShader); //--- ì„¸ì´ë” í”„ë¡œê·¸ë¨ì— í”„ë˜ê·¸ë¨¼íŠ¸ ì„¸ì´ë” ë¶™ì´ê¸°
+    glLinkProgram(shaderID); //--- ì„¸ì´ë” í”„ë¡œê·¸ë¨ ë§í¬í•˜ê¸°
+    glDeleteShader(vertexShader); //--- ì„¸ì´ë” ê°ì²´ë¥¼ ì„¸ì´ë” í”„ë¡œê·¸ë¨ì— ë§í¬í–ˆìŒìœ¼ë¡œ, ì„¸ì´ë” ê°ì²´ ìì²´ëŠ” ì‚­ì œ ê°€ëŠ¥
     glDeleteShader(fragmentShader);
-    glGetProgramiv(shaderID, GL_LINK_STATUS, &result); // ---¼¼ÀÌ´õ°¡ Àß ¿¬°áµÇ¾ú´ÂÁö Ã¼Å©ÇÏ±â
+    glGetProgramiv(shaderID, GL_LINK_STATUS, &result); // ---ì„¸ì´ë”ê°€ ì˜ ì—°ê²°ë˜ì—ˆëŠ”ì§€ ì²´í¬í•˜ê¸°
 
     if (!result) {
         glGetProgramInfoLog(shaderID, 512, NULL, errorLog);
-        std::cerr << "ERROR: shader program ¿¬°á ½ÇÆĞ\n" << errorLog << std::endl;
-        return false;  // ¼öÁ¤: GLuint ¹İÈ¯ Å¸ÀÔÀÌÁö¸¸ false ¹İÈ¯ ½Ã 0À¸·Î Ã³¸®µÊ
+        std::cerr << "ERROR: shader program ì—°ê²° ì‹¤íŒ¨\n" << errorLog << std::endl;
+        return false;  // ìˆ˜ì •: GLuint ë°˜í™˜ íƒ€ì…ì´ì§€ë§Œ false ë°˜í™˜ ì‹œ 0ìœ¼ë¡œ ì²˜ë¦¬ë¨
     }
 
     glUseProgram(shaderID);
     return shaderID;
 }
 
-// --- ¼öÁ¤µÈ ºÎºĞ: OBB ¾÷µ¥ÀÌÆ® ÇÔ¼ö (DrawScene°ú º¯È¯ ¼ø¼­ ÀÏÄ¡) ---
+// --- ìˆ˜ì •ëœ ë¶€ë¶„: OBB ì—…ë°ì´íŠ¸ í•¨ìˆ˜  ---
 void update_world_obb(ExtendedModel& model) {
 
     glm::mat4 modelMat = glm::mat4(1.0f);
 
     if (&model == &Player) {
-        // --- ÇÃ·¹ÀÌ¾î º¯È¯ ·ÎÁ÷ (DrawScene°ú ÀÏÄ¡) ---
-        // 1. ¿ùµå À§Ä¡·Î ÀÌµ¿ + Y=0.25 (ÇÃ·¹ÀÌ¾î ¹Ù´ÚÀ» Y=0¿¡ ¸ÂÃã)
-        // Player.height´Â 0.5ÀÌ¹Ç·Î, half-length´Â 0.25ÀÔ´Ï´Ù.
+        // --- í”Œë ˆì´ì–´ ë³€í™˜ ë¡œì§ (DrawSceneê³¼ ì¼ì¹˜) ---
+        // 1. ì›”ë“œ ìœ„ì¹˜ë¡œ ì´ë™ + Y=0.25 (í”Œë ˆì´ì–´ ë°”ë‹¥ì„ Y=0ì— ë§ì¶¤)
+        // Player.heightëŠ” 0.5ì´ë¯€ë¡œ, half-lengthëŠ” 0.25ì…ë‹ˆë‹¤.
         modelMat = glm::translate(modelMat, model.center + glm::vec3(0.0f, 0.25f, 0.0f));
-        // 2. ±ÕÀÏ ½ºÄÉÀÏ Àû¿ë (model.height = 0.5f)
+        // 2. ê· ì¼ ìŠ¤ì¼€ì¼ ì ìš© (model.height = 0.5f)
         modelMat = glm::scale(modelMat, glm::vec3(model.height));
     }
     else {
-        // --- ¹Ì·Î Å¥ºê º¯È¯ ·ÎÁ÷ (DrawScene°ú ÀÏÄ¡) ---
-        // 1. Enter Animation (¿ùµå Y ÀÌµ¿)
+        // --- ë¯¸ë¡œ íë¸Œ ë³€í™˜ ë¡œì§ (DrawSceneê³¼ ì¼ì¹˜) ---
+        // 1. Enter Animation (ì›”ë“œ Y ì´ë™)
         if (enterAnimation) {
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
         }
 
-        // 2. ¿ùµå XZ À§Ä¡·Î ÀÌµ¿ + Y=0.5 ¸¸Å­ ¿ùµå ÀÌµ¿ (FIX: ¹Ù´ÚÀ» Y=0¿¡ ¸ÂÃã)
-        // model.center´Â XZ À§Ä¡¸¸ ´ã°í ÀÖ½À´Ï´Ù. ¿©±â¿¡ +0.5 Y¸¦ Ãß°¡ÇÕ´Ï´Ù.
+        // 2. ì›”ë“œ XZ ìœ„ì¹˜ë¡œ ì´ë™ + Y=0.5 ë§Œí¼ ì›”ë“œ ì´ë™ (FIX: ë°”ë‹¥ì„ Y=0ì— ë§ì¶¤)
+        // model.centerëŠ” XZ ìœ„ì¹˜ë§Œ ë‹´ê³  ìˆìŠµë‹ˆë‹¤. ì—¬ê¸°ì— +0.5 Yë¥¼ ì¶”ê°€í•©ë‹ˆë‹¤.
         modelMat = glm::translate(modelMat, model.center + glm::vec3(0.0f, 0.5f, 0.0f));
 
-        // 3. YÃà º¯È¯ (·ÎÄÃ ±âÁØ - ¹Ù´Ú °íÁ¤)
+        // 3. Yì¶• ë³€í™˜ (ë¡œì»¬ ê¸°ì¤€ - ë°”ë‹¥ ê³ ì •)
         modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
         modelMat = glm::scale(modelMat, glm::vec3(1.0f, -model.height, 1.0f));
         modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
     }
 
-    // --- (ÀÌÇÏ OBB °è»ê ·ÎÁ÷Àº µ¿ÀÏ) ---
+    // --- (ì´í•˜ OBB ê³„ì‚° ë¡œì§ì€ ë™ì¼) ---
 
-    // ¸ğµ¨ Çà·ÄÀÇ È¸Àü/½ºÄÉÀÏ ºÎºĞ (3x3) ÃßÃâ
+    // ëª¨ë¸ í–‰ë ¬ì˜ íšŒì „/ìŠ¤ì¼€ì¼ ë¶€ë¶„ (3x3) ì¶”ì¶œ
     glm::mat3 rotation_scale_mat = glm::mat3(modelMat);
 
-    // 1. ¿ùµå Áß½É º¯È¯
+    // 1. ì›”ë“œ ì¤‘ì‹¬ ë³€í™˜
     glm::vec4 local_center_h = glm::vec4(model.local_obb.center, 1.0f);
     model.world_obb.center = glm::vec3(modelMat * local_center_h);
 
-    // 2. ¿ùµå Ãà º¯È¯
+    // 2. ì›”ë“œ ì¶• ë³€í™˜
     for (int i = 0; i < 3; i++) {
         model.world_obb.u[i] = glm::normalize(rotation_scale_mat * model.local_obb.u[i]);
     }
 
-    // 3. ¹İÄ¡¼ö ¼³Á¤: ½ºÄÉÀÏ º¤ÅÍ¸¦ ÃßÃâÇÏ¿© local_obb¿¡ Àû¿ë
+    // 3. ë°˜ì¹˜ìˆ˜ ì„¤ì •: ìŠ¤ì¼€ì¼ ë²¡í„°ë¥¼ ì¶”ì¶œí•˜ì—¬ local_obbì— ì ìš©
     glm::vec3 scale_factors = glm::vec3(
-        glm::length(rotation_scale_mat[0]), // XÃà ½ºÄÉÀÏ
-        glm::length(rotation_scale_mat[1]), // YÃà ½ºÄÉÀÏ
-        glm::length(rotation_scale_mat[2])  // ZÃà ½ºÄÉÀÏ
+        glm::length(rotation_scale_mat[0]), // Xì¶• ìŠ¤ì¼€ì¼
+        glm::length(rotation_scale_mat[1]), // Yì¶• ìŠ¤ì¼€ì¼
+        glm::length(rotation_scale_mat[2])  // Zì¶• ìŠ¤ì¼€ì¼
     );
 
-    // ·ÎÄÃ ¹İÄ¡¼ö¿¡ ½ºÄÉÀÏ ÆÑÅÍ¸¦ °öÇÏ¿© ¿ùµå ¹İÄ¡¼ö ¼³Á¤
+    // ë¡œì»¬ ë°˜ì¹˜ìˆ˜ì— ìŠ¤ì¼€ì¼ íŒ©í„°ë¥¼ ê³±í•˜ì—¬ ì›”ë“œ ë°˜ì¹˜ìˆ˜ ì„¤ì •
     model.world_obb.half_length = model.local_obb.half_length * scale_factors;
 }
 
-// ºĞ¸® °Ë»ç ÇÔ¼ö (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È)
+// ë¶„ë¦¬ ê²€ì‚¬ í•¨ìˆ˜ 
 bool is_separated(const OBB& a, const OBB& b, const glm::vec3& axis) {
-    // ÃàÀÇ ±æÀÌ°¡ ³Ê¹« ÀÛÀ¸¸é ¹«½Ã (ºÎµ¿¼Ò¼öÁ¡ ¿ÀÂ÷ Ã³¸®)
+    // ì¶•ì˜ ê¸¸ì´ê°€ ë„ˆë¬´ ì‘ìœ¼ë©´ ë¬´ì‹œ (ë¶€ë™ì†Œìˆ˜ì  ì˜¤ì°¨ ì²˜ë¦¬)
     if (glm::length(axis) < 1e-6) return false;
 
-    // µÎ OBB Áß½É »çÀÌÀÇ º¤ÅÍ
+    // ë‘ OBB ì¤‘ì‹¬ ì‚¬ì´ì˜ ë²¡í„°
     glm::vec3 T = b.center - a.center;
 
-    // 1. Áß½É °£ °Å¸® Åõ¿µ
+    // 1. ì¤‘ì‹¬ ê°„ ê±°ë¦¬ íˆ¬ì˜
     float distance_proj = glm::abs(glm::dot(T, axis));
 
-    // 2. OBB AÀÇ '¹İÁö¸§' Åõ¿µ (°¢ ·ÎÄÃ ÃàÀÇ Åõ¿µ ±æÀÌÀÇ ÇÕ)
+    // 2. OBB Aì˜ 'ë°˜ì§€ë¦„' íˆ¬ì˜ (ê° ë¡œì»¬ ì¶•ì˜ íˆ¬ì˜ ê¸¸ì´ì˜ í•©)
     float radius_a =
         glm::abs(glm::dot(a.half_length.x * a.u[0], axis)) +
         glm::abs(glm::dot(a.half_length.y * a.u[1], axis)) +
         glm::abs(glm::dot(a.half_length.z * a.u[2], axis));
 
-    // 3. OBB BÀÇ '¹İÁö¸§' Åõ¿µ
+    // 3. OBB Bì˜ 'ë°˜ì§€ë¦„' íˆ¬ì˜
     float radius_b =
         glm::abs(glm::dot(b.half_length.x * b.u[0], axis)) +
         glm::abs(glm::dot(b.half_length.y * b.u[1], axis)) +
         glm::abs(glm::dot(b.half_length.z * b.u[2], axis));
 
-    // Áß½É °£ °Å¸®°¡ µÎ ¹İÁö¸§ÀÇ ÇÕº¸´Ù Å©¸é ºĞ¸® (Ãæµ¹ ¾Æ´Ô)
+    // ì¤‘ì‹¬ ê°„ ê±°ë¦¬ê°€ ë‘ ë°˜ì§€ë¦„ì˜ í•©ë³´ë‹¤ í¬ë©´ ë¶„ë¦¬ (ì¶©ëŒ ì•„ë‹˜)
     return distance_proj > (radius_a + radius_b);
 }
 
-// OBB Ãæµ¹ °Ë»ç ÇÔ¼ö (Ã¹ ¹øÂ° ÆÄÀÏ¿¡¼­ °¡Á®¿È, ExtendedModel¿¡ ¸Â°Ô ¼öÁ¤)
+// OBB ì¶©ëŒ ê²€ì‚¬ í•¨ìˆ˜ 
 bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& modelB) {
     const OBB& a = modelA.world_obb;
     const OBB& b = modelB.world_obb;
 
-    // 1. OBB AÀÇ Ãà 3°³ °Ë»ç
+    // 1. OBB Aì˜ ì¶• 3ê°œ ê²€ì‚¬
     for (int i = 0; i < 3; i++) {
         if (is_separated(a, b, a.u[i])) return false;
     }
 
-    // 2. OBB BÀÇ Ãà 3°³ °Ë»ç
+    // 2. OBB Bì˜ ì¶• 3ê°œ ê²€ì‚¬
     for (int i = 0; i < 3; i++) {
         if (is_separated(a, b, b.u[i])) return false;
     }
 
-    // 3. ±³Â÷ Ãà (A_i x B_j) 9°³ °Ë»ç
+    // 3. êµì°¨ ì¶• (A_i x B_j) 9ê°œ ê²€ì‚¬
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             glm::vec3 cross_axis = glm::cross(a.u[i], b.u[j]);
@@ -514,18 +589,18 @@ bool check_obb_collision(const ExtendedModel& modelA, const ExtendedModel& model
         }
     }
 
-    // 15°³ Ãà ¸ğµÎ¿¡¼­ ºĞ¸®µÇÁö ¾Ê¾Ò´Ù¸é Ãæµ¹!
+    // 15ê°œ ì¶• ëª¨ë‘ì—ì„œ ë¶„ë¦¬ë˜ì§€ ì•Šì•˜ë‹¤ë©´ ì¶©ëŒ!
     return true;
 }
 
-// ¼öÁ¤µÈ DrawScene: scissor test·Î ¹Ì´Ï¸Ê Å¬¸®¾î Á¦ÇÑ
+
 void DrawScene() {
     float r = glm::sqrt(cameraPos.x * cameraPos.x + cameraPos.z * cameraPos.z); // XZ plane distance
     cameraPos.x = r * glm::cos(cameraAngle);
     cameraPos.z = r * glm::sin(cameraAngle);
 
 
-    glEnable(GL_DEPTH_TEST); // ±íÀÌ Å×½ºÆ® È°¼ºÈ­
+    glEnable(GL_DEPTH_TEST); // ê¹Šì´ í…ŒìŠ¤íŠ¸ í™œì„±í™”
 
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -540,26 +615,23 @@ void DrawScene() {
 
 
     std::vector<int> cubeIndexCounts;
-    GLuint currentIndexOffset = 0;  // EBO offset ÃßÀû 
+    GLuint currentIndexOffset = 0;  // EBO offset ì¶”ì  
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             Model& mdl = CubeModels[i][j].baseModel;
-            // --- ¼öÁ¤: center¸¦ ·ÎÄÃ Áß½ÉÀ¸·Î »ç¿ë (VBO »ı¼º ½ÃÁ¡) ---
-            glm::vec3 localCenter = CalculateModelCenter(&mdl); // (0,0,0) °¡Á¤
+            // --- ìˆ˜ì •: centerë¥¼ ë¡œì»¬ ì¤‘ì‹¬ìœ¼ë¡œ ì‚¬ìš© (VBO ìƒì„± ì‹œì ) ---
+            glm::vec3 localCenter = CalculateModelCenter(&mdl); // (0,0,0) ê°€ì •
 
             float r = (float)i / std::max(1, n - 1);
             float g = (float)j / std::max(1, m - 1);
             float b = 0.5f;
 
-            // --- ¼öÁ¤µÈ ºÎºĞ (VBO »ı¼º) ---
-            // VBO¿¡ ¿ùµå ÁÂÇ¥¸¦ ±ÁÁö ¾Ê½À´Ï´Ù. 
-            // glm::vec3 translation = CubeModels[i][j].center; // main¿¡¼­ ¼³Á¤ÇÑ ¿ùµå XZ À§Ä¡ (¿©±â¼­ »ç¿ë ¾È ÇÔ)
-
+       
             // add vertices
             for (size_t v = 0; v < mdl.vertex_count; ++v) {
                 Vertex vert = mdl.vertices[v];
-                // --- ¼öÁ¤: ·ÎÄÃ Áß½É(localCenter) ±âÁØÀ¸·Î VBO »ı¼º (¿ùµå XZ ÀÌµ¿ Á¦°Å) ---
+                // --- ìˆ˜ì •: ë¡œì»¬ ì¤‘ì‹¬(localCenter) ê¸°ì¤€ìœ¼ë¡œ VBO ìƒì„± (ì›”ë“œ XZ ì´ë™ ì œê±°) ---
                 float x = vert.x - localCenter.x;
                 float y = vert.y - localCenter.y;
                 float z = vert.z - localCenter.z;
@@ -570,9 +642,9 @@ void DrawScene() {
                 vertexData.push_back(g);
                 vertexData.push_back(b);
             }
-            // --- VBO »ı¼º ¼öÁ¤ ³¡ ---
+            // --- VBO ìƒì„± ìˆ˜ì • ë ---
 
-            int thisCubeIndexCount = 0;  // ÀÌ Å¥ºêÀÇ index ¼ö
+            int thisCubeIndexCount = 0;  // ì´ íë¸Œì˜ index ìˆ˜
             for (size_t f = 0; f < mdl.face_count; ++f) {
                 // assume faces are zero-based indices
                 indices.push_back(static_cast<GLuint>(mdl.faces[f].v1) + vertexBase);
@@ -580,7 +652,7 @@ void DrawScene() {
                 indices.push_back(static_cast<GLuint>(mdl.faces[f].v3) + vertexBase);
                 thisCubeIndexCount += 3;
             }
-            cubeIndexCounts.push_back(thisCubeIndexCount);  // ÀúÀå
+            cubeIndexCounts.push_back(thisCubeIndexCount);  // ì €ì¥
 
             vertexBase += static_cast<GLuint>(mdl.vertex_count);
         }
@@ -597,17 +669,37 @@ void DrawScene() {
     GLint viewLoc = glGetUniformLocation(shaderProgramID, "view");
     GLint projLoc = glGetUniformLocation(shaderProgramID, "proj");
 
-    // 1. ¸ŞÀÎ ºä: ÀüÃ¼ È­¸é ·»´õ¸µ (±âÁ¸ Ä«¸Ş¶ó)
-    glViewport(0, 0, width, height);  // ÀüÃ¼ ºäÆ÷Æ®
-    glm::mat4 mainView = glm::lookAt(cameraPos, centerPoint, glm::vec3(0.0f, 1.0f, 0.0f));
+    // 1. ë©”ì¸ ë·°: ì „ì²´ í™”ë©´ ë Œë”ë§ (ê¸°ì¡´ ì¹´ë©”ë¼)
+    glViewport(0, 0, width, height);  // ì „ì²´ ë·°í¬íŠ¸
+	glm::mat4 mainView = glm::mat4(1.0f);
+    if (cameraMode == 0)
+    {
+         mainView = glm::lookAt(cameraPos, centerPoint, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+    else if (cameraMode == 1)
+    {
+        // 1ì¸ì¹­ ì¹´ë©”ë¼ (ìˆ˜ì • í•„ìš”)
+        glm::vec3 cameraPosition = playerPosition + glm::vec3(0.0f, 0.5f, 0.0f); // í”Œë ˆì´ì–´ ëˆˆ ë†’ì´
+        glm::vec3 cameraTarget = cameraPosition + playerFacing; // ë°”ë¼ë³´ëŠ” ë°©í–¥
+        mainView = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+    else if (cameraMode == 2)
+    {
+        // 3ì¸ì¹­ ì¹´ë©”ë¼ (ìˆ˜ì • í•„ìš”)
+        glm::vec3 cameraOffset = -playerFacing * 1.2f + glm::vec3(0.0f, 0.75, 0.0f); // ë’¤ìª½ + ìœ„
+        glm::vec3 cameraPosition = playerPosition + cameraOffset;
+        glm::vec3 cameraTarget = playerPosition + glm::vec3(0.0f, 0.5f, 0.0f);
+        mainView = glm::lookAt(cameraPosition, cameraTarget, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+    
     glm::mat4 mainProj;
     if (oFlag) {
-        //¿ø±Ù
+        //ì›ê·¼
         mainProj = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 1000.0f);
 
     }
     else {
-        //Á÷±³
+        //ì§êµ
         mainProj = glm::ortho(-10.0f, 10.0f, -10.0f * (float)height / (float)width, 10.0f * (float)height / (float)width, 0.1f, 100.0f);
 
     }
@@ -616,25 +708,43 @@ void DrawScene() {
 
     int cubeIdx = 0;
     currentIndexOffset = 0;
-    glBindVertexArray(MazeVAO); // --- Ãß°¡: ¹Ì·Î VAO ¹ÙÀÎµù ---
+    glBindVertexArray(MazeVAO);
+
+    // --- 3ì¸ì¹­ ì¹´ë©”ë¼ ìœ„ì¹˜ ê³„ì‚° (ë Œë”ë§ ì „ì— ë¯¸ë¦¬ ê³„ì‚°) ---
+    glm::vec3 actualCameraPos = cameraPos; // ê¸°ë³¸ê°’
+    if (cameraMode == 2) {
+        glm::vec3 cameraOffset = -playerFacing * 1.5f + glm::vec3(0.0f, 1.0f, 0.0f);
+        actualCameraPos = playerPosition + cameraOffset;
+    }
+    // --- ê³„ì‚° ë ---
+
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            // --- ¼öÁ¤µÈ ºÎºĞ: ·»´õ¸µ º¯È¯ ¼ø¼­ (OBB¿Í ÀÏÄ¡½ÃÅ´) ---
+            // --- ì¶”ê°€: 3ì¸ì¹­ ëª¨ë“œì—ì„œ ì‹œì•¼ë¥¼ ê°€ë¦¬ëŠ” íë¸ŒëŠ” ìŠ¤í‚µ ---
+            if (cameraMode == 2 && CubeModels[i][j].renderFlag) {
+                // íë¸Œ ì¤‘ì‹¬ ìœ„ì¹˜ ê³„ì‚° (Yì¶• ë†’ì´ ê³ ë ¤)
+                glm::vec3 cubeWorldCenter = CubeModels[i][j].center + glm::vec3(0.0f, CubeModels[i][j].height * 0.5f, 0.0f);
+
+                if (IsBlockingView(cubeWorldCenter, actualCameraPos, playerPosition)) {
+                    
+                    cubeIdx++;
+                    currentIndexOffset += cubeIndexCounts[cubeIdx - 1];
+                    continue;
+                }
+            }
+       
+
             glm::mat4 modelMat = glm::mat4(1.0f);
 
-            // 1. Enter Animation (¿ùµå Y ÀÌµ¿)
             if (enterAnimation) {
                 modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
             }
 
-            // 2. ¿ùµå XZ À§Ä¡·Î ÀÌµ¿ + Y=0.5 ¸¸Å­ ¿ùµå ÀÌµ¿ (FIX: ¹Ù´ÚÀ» Y=0¿¡ ¸ÂÃã)
             modelMat = glm::translate(modelMat, CubeModels[i][j].center + glm::vec3(0.0f, 0.5f, 0.0f));
 
-            // 3. YÃà º¯È¯ (·ÎÄÃ ±âÁØ - ¹Ù´Ú °íÁ¤)
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
             modelMat = glm::scale(modelMat, glm::vec3(1.0f, -CubeModels[i][j].height, 1.0f));
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
-            // --- ¼öÁ¤ ³¡ ---
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
@@ -642,7 +752,6 @@ void DrawScene() {
             {
                 glDrawElements(GL_TRIANGLES, thisCubeIndexCount, GL_UNSIGNED_INT,
                     (void*)(currentIndexOffset * sizeof(GLuint)));
-
             }
 
             currentIndexOffset += thisCubeIndexCount;
@@ -650,83 +759,84 @@ void DrawScene() {
         }
     }
 
-    // --- ¼öÁ¤µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î ·»´õ¸µ (¹Ù´ÚÀ» Y=0¿¡ ¸ÂÃã) ---
-    // ÇÃ·¹ÀÌ¾î ½ºÄÉÀÏ 0.5ÀÇ Àı¹İÀÎ 0.25¸¸Å­ YÃà ÀÌµ¿
+    // --- í”Œë ˆì´ì–´ ë Œë”ë§ ---
+
     glm::mat4 playerModelMat = glm::translate(glm::mat4(1.0f), playerPosition + glm::vec3(0.0f, 0.25f, 0.0f));
-    // 2. ±ÕÀÏ ½ºÄÉÀÏ Àû¿ë (Player.height = 0.5f)
+	playerModelMat = glm::rotate(playerModelMat, -playerYaw, glm::vec3(0.0f, 1.0f, 0.0f));
     playerModelMat = glm::scale(playerModelMat, glm::vec3(Player.height));
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(playerModelMat));
 
-    // ÇÃ·¹ÀÌ¾î ±×¸®±â
     glBindVertexArray(PlayerVAO);
-    glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
-    // --- ÇÃ·¹ÀÌ¾î ·»´õ¸µ ³¡ ---
+    if (sFlag)
+    {
+        glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
+    }
 
-    // OBB ·»´õ¸µÀ» À§ÇØ VAO ¹ÙÀÎµù ÇØÁ¦
+    
+
     glBindVertexArray(0);
 
-    // --- Ãß°¡µÈ ºÎºĞ: OBB ·»´õ¸µÀ» À§ÇÑ ¸ğµ¨ Çà·Ä ÃÊ±âÈ­ ---
-    // OBB Á¤Á¡Àº ÀÌ¹Ì ¿ùµå ÁÂÇ¥°èÀÌ¹Ç·Î ¸ğµ¨ Çà·ÄÀ» ´ÜÀ§ Çà·Ä·Î ¼³Á¤
-    glm::mat4 identityMat = glm::mat4(1.0f);
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(identityMat));
-    // --- OBB ·»´õ¸µ ---
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            if (CubeModels[i][j].renderFlag) {
-                // Ãæµ¹ ½Ã ³ë¶õ»ö, ¾Æ´Ò ½Ã »¡°£»ö
-                glm::vec3 mazeColor = CubeModels[i][j].is_colliding ? glm::vec3(1.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
-                RenderOBB(CubeModels[i][j].world_obb, mazeColor);
-            }
-        }
-    }
-    // Ãæµ¹ ½Ã ³ë¶õ»ö, ¾Æ´Ò ½Ã ÆÄ¶õ»ö
-    glm::vec3 playerColor = Player.is_colliding ? glm::vec3(1.0f, 1.0f, 0.0f) : glm::vec3(0.0f, 0.0f, 1.0f);
-    RenderOBB(Player.world_obb, playerColor);
+    //glm::mat4 identityMat = glm::mat4(1.0f);
+    //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(identityMat));
+    //// --- OBB ë Œë”ë§ ---
+    //for (int i = 0; i < n; ++i) {
+    //    for (int j = 0; j < m; ++j) {
+    //        if (CubeModels[i][j].renderFlag) {
+    //            // ì¶©ëŒ ì‹œ ë…¸ë€ìƒ‰, ì•„ë‹ ì‹œ ë¹¨ê°„ìƒ‰
+    //            glm::vec3 mazeColor = CubeModels[i][j].is_colliding ? glm::vec3(1.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+    //            RenderOBB(CubeModels[i][j].world_obb, mazeColor);
+    //        }
+    //    }
+    //}
+        
+        
+    
+  
 
-    // ¹Ì´Ï¸Ê
+    // ë¯¸ë‹ˆë§µ
     int miniWidth = 200;
     int miniHeight = 200;
-    int miniX = width - miniWidth;         // ¿À¸¥ÂÊ ½ÃÀÛ
-    int miniY = height - miniHeight;       // À§ÂÊ ½ÃÀÛ
+    int miniX = width - miniWidth;         // ì˜¤ë¥¸ìª½ ì‹œì‘
+    int miniY = height - miniHeight;       // ìœ„ìª½ ì‹œì‘
 
-    // ¹Ì´Ï¸Ê ¹è°æ Å¬¸®¾î: scissor test·Î ¿µ¿ª Á¦ÇÑ (¸ŞÀÎ ºä º¸È£)
-    glDisable(GL_DEPTH_TEST);  // ¿À¹ö·¹ÀÌ¸¦ À§ÇØ ±íÀÌ Å×½ºÆ® ²ô±â
-    glEnable(GL_SCISSOR_TEST); // scissor È°¼ºÈ­
-    glScissor(miniX, miniY, miniWidth, miniHeight);  // Å¬¸®¾î ¿µ¿ª Á¦ÇÑ
+  
+    glDisable(GL_DEPTH_TEST);  
+    glEnable(GL_SCISSOR_TEST); 
+    glScissor(miniX, miniY, miniWidth, miniHeight); 
     glViewport(miniX, miniY, miniWidth, miniHeight);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_SCISSOR_TEST);  // scissor º¹¿ø
+    glDisable(GL_SCISSOR_TEST);  
 
-    // Å¾ºä Ä«¸Ş¶ó/ÇÁ·ÎÁ§¼Ç
+    // íƒ‘ë·° ì¹´ë©”ë¼/í”„ë¡œì ì…˜
     glm::mat4 topView = glm::lookAt(glm::vec3(0.0f, (float)std::max(n, m) + 10.0f, 0.0f), centerPoint, glm::vec3(1.0f, 0.0f, 0.0f));
     topView = glm::rotate(topView, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 topProj = glm::perspective(glm::radians(45.0f), (float)miniWidth / (float)miniHeight, 0.1f, 1000.0f);
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(topView));
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(topProj));
 
-    // Å¾ºä Àç·»´õ¸µ 
+    
     cubeIdx = 0;
     currentIndexOffset = 0;
-    glBindVertexArray(MazeVAO); // --- Ãß°¡: ¹Ì·Î VAO ¹ÙÀÎµù ---
+    glBindVertexArray(MazeVAO); 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            // --- ¼öÁ¤µÈ ºÎºĞ: ·»´õ¸µ º¯È¯ ¼ø¼­ (OBB¿Í ÀÏÄ¡½ÃÅ´) ---
+            
             glm::mat4 modelMat = glm::mat4(1.0f);
 
-            // 1. Enter Animation (¿ùµå Y ÀÌµ¿)
+            // 1. Enter Animation (ì›”ë“œ Y ì´ë™)
             if (enterAnimation) {
                 modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
             }
 
-            // 2. ¿ùµå XZ À§Ä¡·Î ÀÌµ¿ + Y=0.5 ¸¸Å­ ¿ùµå ÀÌµ¿ (FIX: ¹Ù´ÚÀ» Y=0¿¡ ¸ÂÃã)
+            // 2. ì›”ë“œ XZ ìœ„ì¹˜ë¡œ ì´ë™ + Y=0.5 ë§Œí¼ ì›”ë“œ ì´ë™ (FIX: ë°”ë‹¥ì„ Y=0ì— ë§ì¶¤)
             modelMat = glm::translate(modelMat, CubeModels[i][j].center + glm::vec3(0.0f, 0.5f, 0.0f));
 
-            // 3. YÃà º¯È¯ (·ÎÄÃ ±âÁØ - ¹Ù´Ú °íÁ¤)
+            // 3. Yì¶• ë³€í™˜ (ë¡œì»¬ ê¸°ì¤€ - ë°”ë‹¥ ê³ ì •)
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.5f, 0.0f));
             modelMat = glm::scale(modelMat, glm::vec3(1.0f, -CubeModels[i][j].height, 1.0f));
             modelMat = glm::translate(modelMat, glm::vec3(0.0f, -0.5f, 0.0f));
-            // --- ¼öÁ¤ ³¡ ---
+            // --- ìˆ˜ì • ë ---
 
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
             int thisCubeIndexCount = cubeIndexCounts[cubeIdx];
@@ -741,12 +851,13 @@ void DrawScene() {
         }
     }
 
-    // --- Ãß°¡: ¹Ì´Ï¸Ê ÇÃ·¹ÀÌ¾î ·»´õ¸µ ---
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(playerModelMat)); // ¸ŞÀÎ ºä¿¡¼­ ¾´ playerModelMat Àç»ç¿ë
+    
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(playerModelMat)); // ë©”ì¸ ë·°ì—ì„œ ì“´ playerModelMat ì¬ì‚¬ìš©
     glBindVertexArray(PlayerVAO);
-    glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
-    // --- ¹Ì´Ï¸Ê ÇÃ·¹ÀÌ¾î ·»´õ¸µ ³¡ ---
-
+   if (sFlag)
+    {
+        glDrawElements(GL_TRIANGLES, Player.indexCount, GL_UNSIGNED_INT, (void*)0);
+    }
 
     glEnable(GL_DEPTH_TEST);
 
@@ -757,7 +868,7 @@ void DrawScene() {
 }
 
 GLvoid Reshape(int w, int h) {
-    glViewport(0, 0, w, h);  // ÀüÃ¼ ºäÆ÷Æ® À¯Áö
+    glViewport(0, 0, w, h);  // ì „ì²´ ë·°í¬íŠ¸ ìœ ì§€
     width = w;
     height = h;
 }
@@ -780,10 +891,10 @@ void Keyboard(unsigned char key, int x, int y)
 {
     switch (key)
     {
-    case 'o': // Á÷°¢ Åõ¿µ / ¿ø±Ù Åõ¿µ Åä±Û
+    case 'o': // ì§ê° íˆ¬ì˜ / ì›ê·¼ íˆ¬ì˜ í† ê¸€
         oFlag = !oFlag;
         break;
-    case 'm': // ¾Ö´Ï¸ŞÀÌ¼Ç Á¤Áö/Àç°³ Åä±Û
+    case 'm': // ì• ë‹ˆë©”ì´ì…˜ ì •ì§€/ì¬ê°œ í† ê¸€
         mFlag = !mFlag;
         break;
     case 'y':
@@ -800,8 +911,9 @@ void Keyboard(unsigned char key, int x, int y)
         break;
     case 'r':
     {
+        rFlag = true;
         if (n < 3 || m < 3) {
-            std::cout << "¹Ì·Î°¡ ³Ê¹« ÀÛ¾Æ¿ä! (ÃÖ¼Ò 3x3 ÀÌ»ó)" << std::endl;
+            std::cout << "ë¯¸ë¡œê°€ ë„ˆë¬´ ì‘ì•„ìš”! (ìµœì†Œ 3x3 ì´ìƒ)" << std::endl;
             break;
         }
 
@@ -872,21 +984,21 @@ void Keyboard(unsigned char key, int x, int y)
 
 
         for (const auto& w : walls) {
-            if (w.wi < n && w.wj < m) {  // ¾ÈÀü Ã¼Å©
+            if (w.wi < n && w.wj < m) {  // ì•ˆì „ ì²´í¬
                 CubeModels[w.wi][w.wj].height = 4.0f;
                 CubeModels[w.wi][w.wj].renderFlag = true;
             }
         }
 
         if (total_cells <= 1) {
-            std::cout << "¼¿ÀÌ 1°³ ÀÌÇÏ¶ó¼­ ´Ü¼ø ¹Ì·Î (º® °ÅÀÇ ¾øÀ½)" << std::endl;
+            std::cout << "ì…€ì´ 1ê°œ ì´í•˜ë¼ì„œ ë‹¨ìˆœ ë¯¸ë¡œ (ë²½ ê±°ì˜ ì—†ìŒ)" << std::endl;
         }
 
-        // 8. ·£´ı ¼ÅÇÃ
+        // 8. ëœë¤ ì…”í”Œ
         std::mt19937 rng(rd());
         std::shuffle(walls.begin(), walls.end(), rng);
 
-        // 9. Kruskal: ¿¬°á ¾È µÈ º®¸¸ Á¦°Å (walls ºñ¾î ÀÖÀ¸¸é ÀÚµ¿ ½ºÅµ)
+        // 9. Kruskal: ì—°ê²° ì•ˆ ëœ ë²½ë§Œ ì œê±° (walls ë¹„ì–´ ìˆìœ¼ë©´ ìë™ ìŠ¤í‚µ)
         for (const auto& w : walls) {
             if (find(find, w.c1) != find(find, w.c2)) {
                 unite(w.c1, w.c2);
@@ -895,17 +1007,17 @@ void Keyboard(unsigned char key, int x, int y)
             }
         }
 
-        // 10. ÀÔ±¸/Ãâ±¸ ¶Õ±â (Ç×»ó ½ÇÇà ¡æ ÀÛÀº ¹Ì·Î¿¡¼­µµ ÀÚ¿¬½º·´°Ô ¶Õ¸²)
+        // 10. ì…êµ¬/ì¶œêµ¬ ëš«ê¸° (í•­ìƒ ì‹¤í–‰ â†’ ì‘ì€ ë¯¸ë¡œì—ì„œë„ ìì—°ìŠ¤ëŸ½ê²Œ ëš«ë¦¼)
         if (n > 2 && m > 2) {
-            // ¿ŞÂÊ ÀÔ±¸
+            // ì™¼ìª½ ì…êµ¬
             CubeModels[1][0].renderFlag = false;
             CubeModels[1][0].height = -0.1f;
-            // ¿À¸¥ÂÊ Ãâ±¸
+            // ì˜¤ë¥¸ìª½ ì¶œêµ¬
             CubeModels[n - 2][m - 1].renderFlag = false;
             CubeModels[n - 2][m - 1].height = -0.1f;
         }
 
-        // ¹Ì·Î Àç»ı¼º ÈÄ OBB Àç°è»ê
+        // ë¯¸ë¡œ ì¬ìƒì„± í›„ OBB ì¬ê³„ì‚°
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 if (CubeModels[i][j].renderFlag) {
@@ -916,7 +1028,7 @@ void Keyboard(unsigned char key, int x, int y)
 
         break;
     }
-    case 'v': // À°¸éÃ¼µéÀÌ ¿òÁ÷ÀÓÀÌ ¸ØÃß°í ³·Àº ³ôÀÌ·Î º¯ÇÔ
+    case 'v': // ìœ¡ë©´ì²´ë“¤ì´ ì›€ì§ì„ì´ ë©ˆì¶”ê³  ë‚®ì€ ë†’ì´ë¡œ ë³€í•¨
         mFlag = !mFlag;
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
@@ -924,19 +1036,44 @@ void Keyboard(unsigned char key, int x, int y)
             }
         }
         break;
-    case 's': // ¹Ì·Î¿¡ °´Ã¼ »ı¼º
+    case 's': // ë¯¸ë¡œì— ê°ì²´ ìƒì„±
+        if (rFlag)
+        {
+            sFlag = !sFlag;
+            playerPosition.y = 10.0f;
+
+            for (int i = 0; i < n; ++i) {
+                for (int j = 0; j < m; ++j) {
+                    if (CubeModels[i][j].renderFlag == false) {
+                        playerPosition.x = CubeModels[i][j].center.x;
+                        playerPosition.z = CubeModels[i][j].center.z;
+                        i = n; // ë°”ê¹¥ ë£¨í”„ íƒˆì¶œ
+                        break;
+                    }
+                }
+            }
+        }
+		
         break;
-    case '-': // À°¸éÃ¼ ½ºÇÇµå °¨¼Ò
+    case '-': // ìœ¡ë©´ì²´ ìŠ¤í”¼ë“œ ê°ì†Œ
         CubeSpeedDown();
         break;
-    case '=': // À°¸éÃ¼ ½ºÇÇµå Áõ°¡
+    case '=': // ìœ¡ë©´ì²´ ìŠ¤í”¼ë“œ ì¦ê°€
         CubeSpeedUp();
         break;
-    case '1': // °´Ã¼ ½ÃÁ¡ (1ÀÎÄª)
+	case '0': 
+		cameraMode = 0; // ê¸°ë³¸ ì‹œì (ì¿¼í„°ë·°)   
         break;
-    case '3': // °´Ã¼ ½ÃÁ¡ (3ÀÎÄª)
+    case '1': // ê°ì²´ ì‹œì  (1ì¸ì¹­)
+		if (sFlag)
+		    cameraMode = 1;
         break;
-    case 'c': // ¸ğµç °ª ÃÊ±âÈ­
+    case '3': // ê°ì²´ ì‹œì  (3ì¸ì¹­)
+		if (sFlag)
+		    cameraMode = 2;
+        break;
+    case 'c': // ëª¨ë“  ê°’ ì´ˆê¸°í™”
+		ResetAll();
         break;
     case 'q':
         exit(0);
@@ -944,25 +1081,57 @@ void Keyboard(unsigned char key, int x, int y)
     }
 }
 
-// --- Ãß°¡µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î Ãæµ¹ °Ë»ç ÇïÆÛ ÇÔ¼ö ---
-// (Timer¿¡¼­ ¹Ì·Î Å¥ºê OBB°¡ ÀÌ¹Ì ¾÷µ¥ÀÌÆ® µÇ¾ú´Ù°í °¡Á¤)
+// --- ì¶”ê°€ëœ ë¶€ë¶„: í”Œë ˆì´ì–´ ì¶©ëŒ ê²€ì‚¬ í—¬í¼ í•¨ìˆ˜ ---
 bool CheckPlayerCollision(const ExtendedModel& playerModel) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (CubeModels[i][j].renderFlag && check_obb_collision(playerModel, CubeModels[i][j])) {
-                return true; // ÇÏ³ª¶óµµ Ãæµ¹ÇÏ¸é Áï½Ã true ¹İÈ¯
+                return true; // í•˜ë‚˜ë¼ë„ ì¶©ëŒí•˜ë©´ ì¦‰ì‹œ true ë°˜í™˜
             }
         }
     }
-    return false; // Ãæµ¹ ¾øÀ½
+    return false; 
 }
 
 void Timer(int value)
 {
     float delta = 1.0f / 60.0f;
     cameraAngle = glm::mix(cameraAngle, targetCameraAngle, interpSpeed * delta);
+    
+	Input::Update();
+	
 
-    // 0. Ãæµ¹ »óÅÂ ÇÃ·¡±× ÃÊ±âÈ­ (½Ã°¢È­¿ë)
+    float moveSpeed = 1.0f; // ë°©í–¥ ì„¤ì •ìš©
+
+    // í”Œë ˆì´ì–´ì˜ ì˜¤ë¥¸ìª½ ë°©í–¥ ë²¡í„° ê³„ì‚° (playerFacingê³¼ ìˆ˜ì§)
+    glm::vec3 rightDir = glm::normalize(glm::cross(playerFacing, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+    playerMoveDir = glm::vec3(0.0f); // ë§¤ í”„ë ˆì„ ì´ˆê¸°í™”
+
+    if (Input::GetKey(eKeyCode::Up))
+    {
+        playerMoveDir += playerFacing * moveSpeed;
+    }
+    if (Input::GetKey(eKeyCode::Down))
+    {
+        playerMoveDir += -playerFacing * moveSpeed;
+    }
+    if (Input::GetKey(eKeyCode::Left))
+    {
+        playerMoveDir += -rightDir * moveSpeed;
+    }
+    if (Input::GetKey(eKeyCode::Right))
+    {
+        playerMoveDir += rightDir * moveSpeed;
+    }
+
+    if (playerPosition.y > groundY && sFlag)
+    {
+        playerPosition.y -= gravity * delta;
+
+    }
+	
+    // 0. ì¶©ëŒ ìƒíƒœ í”Œë˜ê·¸ ì´ˆê¸°í™” (ì‹œê°í™”ìš©)
     Player.is_colliding = false;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
@@ -970,7 +1139,7 @@ void Timer(int value)
         }
     }
 
-    // 1. ¹Ì·Î Å¥ºê ¾Ö´Ï¸ŞÀÌ¼Ç (³ôÀÌ º¯°æ) - (»ç¿ëÀÚ ÄÚµå À¯Áö)
+    // 1. ë¯¸ë¡œ íë¸Œ ì• ë‹ˆë©”ì´ì…˜ (ë†’ì´ ë³€ê²½) - (ì‚¬ìš©ì ì½”ë“œ ìœ ì§€)
     if (!enterAnimation)
     {
         if (!mFlag)
@@ -997,7 +1166,7 @@ void Timer(int value)
     }
 
 
-    // 2. ¹Ì·Î Å¥ºê OBB ¾÷µ¥ÀÌÆ® (º¯°æµÈ ³ôÀÌ/¾Ö´Ï¸ŞÀÌ¼Ç ¹İ¿µ)
+    // 2. ë¯¸ë¡œ íë¸Œ OBB ì—…ë°ì´íŠ¸ (ë³€ê²½ëœ ë†’ì´/ì• ë‹ˆë©”ì´ì…˜ ë°˜ì˜)
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (CubeModels[i][j].renderFlag) {
@@ -1006,38 +1175,38 @@ void Timer(int value)
         }
     }
 
-    // --- ¼öÁ¤µÈ ºÎºĞ: ÇÃ·¹ÀÌ¾î ÀÌµ¿ ¹× Ãæµ¹ ÀÀ´ä (Timer·Î ÀÌµ¿) ---
-    float playerMoveSpeed = 3.0f; // ÃÊ´ç ÀÌµ¿ ¼Óµµ
+    // --- ìˆ˜ì •ëœ ë¶€ë¶„: í”Œë ˆì´ì–´ ì´ë™ ë° ì¶©ëŒ ì‘ë‹µ (Timerë¡œ ì´ë™) ---
+    float playerMoveSpeed = 3.0f; // ì´ˆë‹¹ ì´ë™ ì†ë„
     if (glm::length(playerMoveDir) > 0.01f) {
         glm::vec3 desiredMove = glm::normalize(playerMoveDir) * playerMoveSpeed * delta;
         glm::vec3 oldPos = playerPosition;
 
-        // 3a. XÃà ÀÌµ¿ ½Ãµµ
+        // 3a. Xì¶• ì´ë™ ì‹œë„
         glm::vec3 tryXPos = oldPos + glm::vec3(desiredMove.x, 0, 0);
         Player.center = tryXPos;
-        Player.height = 0.5f; // --- ¼öÁ¤: ½ºÄÉÀÏ 0.5 ---
-        update_world_obb(Player); // X ÀÌµ¿ ÈÄÀÇ OBB
+        Player.height = playerScale; // --- ìˆ˜ì •: ìŠ¤ì¼€ì¼ 0.5 ---
+        update_world_obb(Player); // X ì´ë™ í›„ì˜ OBB
         if (!CheckPlayerCollision(Player)) {
-            playerPosition.x = tryXPos.x; // Ãæµ¹ ¾ÈÇÏ¸é X ÀÌµ¿
+            playerPosition.x = tryXPos.x; // ì¶©ëŒ ì•ˆí•˜ë©´ X ì´ë™
         }
 
-        // 3b. ZÃà ÀÌµ¿ ½Ãµµ (XÃàÀÌ ÀÌµ¿ÇßÀ» ¼öµµ ÀÖ´Â À§Ä¡¿¡¼­)
+        // 3b. Zì¶• ì´ë™ ì‹œë„ 
         glm::vec3 tryZPos = playerPosition + glm::vec3(0, 0, desiredMove.z);
         Player.center = tryZPos;
-        Player.height = 0.5f; // --- ¼öÁ¤: ½ºÄÉÀÏ 0.5 ---
-        update_world_obb(Player); // Z ÀÌµ¿ ÈÄÀÇ OBB
+        Player.height = playerScale; // --- ìˆ˜ì •: ìŠ¤ì¼€ì¼ 0.5 ---
+        update_world_obb(Player); // Z ì´ë™ í›„ì˜ OBB
         if (!CheckPlayerCollision(Player)) {
-            playerPosition.z = tryZPos.z; // Ãæµ¹ ¾ÈÇÏ¸é Z ÀÌµ¿
+            playerPosition.z = tryZPos.z; // ì¶©ëŒ ì•ˆí•˜ë©´ Z ì´ë™
         }
     }
-    // --- ¼öÁ¤ ³¡ ---
+    // --- ìˆ˜ì • ë ---
 
-    // 4. ÃÖÁ¾ ÇÃ·¹ÀÌ¾î OBB ¾÷µ¥ÀÌÆ® (½Ã°¢È­ ¹× ´ÙÀ½ ÇÁ·¹ÀÓ¿ë)
+    // 4. ìµœì¢… í”Œë ˆì´ì–´ OBB ì—…ë°ì´íŠ¸ (ì‹œê°í™” ë° ë‹¤ìŒ í”„ë ˆì„ìš©)
     Player.center = playerPosition;
-    Player.height = 0.5f; // --- ¼öÁ¤: ½ºÄÉÀÏ 0.5 ---
+    Player.height = playerScale; // --- ìˆ˜ì •: ìŠ¤ì¼€ì¼ 0.5 ---
     update_world_obb(Player);
 
-    // 5. Ãæµ¹ ÇÃ·¡±× ¼³Á¤ (½Ã°¢È­¿ë)
+    // 5. ì¶©ëŒ í”Œë˜ê·¸ ì„¤ì • (ì‹œê°í™”ìš©)
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
             if (CubeModels[i][j].renderFlag && check_obb_collision(Player, CubeModels[i][j])) {
@@ -1053,48 +1222,69 @@ void Timer(int value)
 
 void Mouse(int button, int state, int x, int y)
 {
-
+  
 }
 
-// --- ¼öÁ¤µÈ ºÎºĞ: SpecialKeyboard (¹æÇâÅ°¸¸ ¼³Á¤) ---
 void SpecialKeyboard(int key, int x, int y)
 {
-    float moveSpeed = 1.0f; // ¹æÇâ ¼³Á¤¿ë
-    if (key == GLUT_KEY_UP) {
-        playerMoveDir.z = -moveSpeed; // -z ¹æÇâ
-    }
-    else if (key == GLUT_KEY_DOWN) {
-        playerMoveDir.z = moveSpeed; // +z ¹æÇâ
-    }
-    else if (key == GLUT_KEY_LEFT) {
-        playerMoveDir.x = -moveSpeed;
-    }
-    else if (key == GLUT_KEY_RIGHT) {
-        playerMoveDir.x = moveSpeed;
-    }
-    // glutPostRedisplay(); // Timer°¡ ¸Å ÇÁ·¹ÀÓ È£ÃâÇÏ¹Ç·Î ÇÊ¿ä ¾øÀ½
-}
-// --- ¼öÁ¤ ³¡ ---
+    float moveSpeed = 1.0f; // ë°©í–¥ ì„¤ì •ìš©
 
-// --- Ãß°¡µÈ ºÎºĞ: SpecialKeyboardUp (Å° ¶¼¸é ¸ØÃã) ---
-void SpecialKeyboardUp(int key, int x, int y)
-{
+    // í”Œë ˆì´ì–´ì˜ ì˜¤ë¥¸ìª½ ë°©í–¥ ë²¡í„° ê³„ì‚° (playerFacingê³¼ ìˆ˜ì§)
+    glm::vec3 rightDir = glm::normalize(glm::cross(playerFacing, glm::vec3(0.0f, 1.0f, 0.0f)));
+
     if (key == GLUT_KEY_UP) {
-        if (playerMoveDir.z < 0) playerMoveDir.z = 0.0f;
+        // ì•ìœ¼ë¡œ ì´ë™ (í”Œë ˆì´ì–´ê°€ ë°”ë¼ë³´ëŠ” ë°©í–¥)
+        playerMoveDir = playerFacing * moveSpeed;
     }
     else if (key == GLUT_KEY_DOWN) {
-        if (playerMoveDir.z > 0) playerMoveDir.z = 0.0f;
+        // ë’¤ë¡œ ì´ë™ (í”Œë ˆì´ì–´ê°€ ë°”ë¼ë³´ëŠ” ë°˜ëŒ€ ë°©í–¥)
+        playerMoveDir = -playerFacing * moveSpeed;
     }
     else if (key == GLUT_KEY_LEFT) {
-        if (playerMoveDir.x < 0) playerMoveDir.x = 0.0f;
+        // ì™¼ìª½ìœ¼ë¡œ ì´ë™ (ì˜¤ë¥¸ìª½ ë°©í–¥ì˜ ë°˜ëŒ€)
+        playerMoveDir = -rightDir * moveSpeed;
     }
     else if (key == GLUT_KEY_RIGHT) {
-        if (playerMoveDir.x > 0) playerMoveDir.x = 0.0f;
+        // ì˜¤ë¥¸ìª½ìœ¼ë¡œ ì´ë™
+        playerMoveDir = rightDir * moveSpeed;
     }
 }
-// --- Ãß°¡ ³¡ ---
+
+
+
 
 void Motion(int x, int y)
 {
+    if (sFlag && cameraMode != 0)
+    {
 
+        // í™”ë©´ ì¤‘ì•™ ì¢Œí‘œ ê³„ì‚°
+        int centerX = width / 2;
+        int centerY = height / 2;
+
+        // ë§ˆìš°ìŠ¤ ì´ë™ëŸ‰ ê³„ì‚°
+        int deltaX = x - centerX;
+        int deltaY = y - centerY;
+
+        // ë§ˆìš°ìŠ¤ ê°ë„ ì„¤ì •
+        float sensitivity = 0.005f;
+
+        // Yaw ê°ë„ ì—…ë°ì´íŠ¸ (ì¢Œìš° íšŒì „)
+        playerYaw += deltaX * sensitivity;
+
+        // playerFacing ë²¡í„° ì—…ë°ì´íŠ¸ (Yì¶• ê¸°ì¤€ íšŒì „)
+        playerFacing.x = sin(playerYaw);
+        playerFacing.z = -cos(playerYaw);
+        playerFacing.y = 0.0f;
+        playerFacing = glm::normalize(playerFacing);
+
+        // í˜„ì¬ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ ì €ì¥
+        lastMouseX = x;
+        lastMouseY = y;
+
+        glutWarpPointer(centerX, centerY);
+
+        // í™”ë©´ ë‹¤ì‹œ ê·¸ë¦¬ê¸°
+        glutPostRedisplay();
+    }
 }

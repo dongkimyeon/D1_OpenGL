@@ -34,6 +34,12 @@
     <Filter Include="소스 파일\extra">
       <UniqueIdentifier>{bb882034-ec83-4294-a7e4-c020073157b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Shader">
+      <UniqueIdentifier>{94695f5f-d60e-4908-8fc6-230898efc8f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Input">
+      <UniqueIdentifier>{e6a420bc-b17e-4254-9526-6002875cfb1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="S1.cpp">
@@ -159,6 +165,12 @@
     <ClCompile Include="S23.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="S25.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="Input.cpp">
+      <Filter>소스 파일\Input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
@@ -203,11 +215,28 @@
     <ClInclude Include="FileRead.h">
       <Filter>소스 파일\extra</Filter>
     </ClInclude>
+    <ClInclude Include="Input.h">
+      <Filter>소스 파일\Input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vertex.glsl" />
-    <None Include="fragment.glsl" />
-    <None Include="vertex3D.glsl" />
-    <None Include="S18Vertex.glsl" />
+    <None Include="fragment.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="S18Vertex.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="vertex.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="vertex3D.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="lightFragment.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="lightVertex.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
   </ItemGroup>
 </Project>
