@@ -735,7 +735,7 @@ void DrawScene() {
        
 
             glm::mat4 modelMat = glm::mat4(1.0f);
-
+			modelMat = glm::translate(modelMat, mazeMoveVec);
             if (enterAnimation) {
                 modelMat = glm::translate(modelMat, glm::vec3(0.0f, yMoveValue, 0.0f));
             }
@@ -1081,7 +1081,6 @@ void Keyboard(unsigned char key, int x, int y)
     }
 }
 
-// --- 추가된 부분: 플레이어 충돌 검사 헬퍼 함수 ---
 bool CheckPlayerCollision(const ExtendedModel& playerModel) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
