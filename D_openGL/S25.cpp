@@ -43,7 +43,7 @@ GLuint orbitVAO, orbitVBO; // 궤도 그리기용 VAO/VBO
 Model model;
 std::vector<glm::vec3> normals; // 노멀 벡터 저장
 glm::vec3 modelCenter = glm::vec3(0.0f); // 모델 중심 추가
-glm::vec3 lightPos = glm::vec3(3.0f, 2.0f, 0.0f); // 조명 위치
+glm::vec3 lightPos = glm::vec3(3.0f, 0.0f, 0.0f); // 조명 위치
 glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f); // 조명 색상 (흰색)
 int facenum = 0;  // 초기값 0으로 변경 (-1에서 0으로)
 int endfacenum = 0; // endfacenum 변수 추가
@@ -323,7 +323,7 @@ void DrawLightOrbit() {
 	for (int i = 0; i <= segments; ++i) {
 		float angle = 2.0f * M_PI * i / segments;
 		float x = modelCenter.x + lightDistance * cos(angle);
-		float y = modelCenter.y + 2.0f; // 고정된 높이
+		float y = modelCenter.y;
 		float z = modelCenter.z + lightDistance * sin(angle);
 		orbitVertices.push_back(x);
 		orbitVertices.push_back(y);
@@ -377,7 +377,7 @@ void DrawScene() {
 	if (lightRotate) {
 		lightPos.x = modelCenter.x + lightDistance * cos(lightOrbitAngle);
 		lightPos.z = modelCenter.z + lightDistance * sin(lightOrbitAngle);
-		lightPos.y = modelCenter.y + 2.0f;
+		lightPos.y = modelCenter.y;
 	}
 
 	// OBJ 버텍스 데이터: 위치 + 노멀
@@ -554,25 +554,6 @@ void Keyboard(unsigned char key, int x, int y)
 	case 'a':
 		targetCameraAngle += glm::radians(5.0f);
 		break;
-	case 'w':
-		wireMode = !wireMode;
-		break;
-	case '=':
-		cameraPos.x -= 1.0f;
-		cameraPos.y -= 1.0f;
-		cameraPos.z -= 1.0f;
-		break;
-	case '-':
-		cameraPos.x += 1.0f;
-		cameraPos.y += 1.0f;
-		cameraPos.z += 1.0f;
-		break;
-	case 'u':
-		modelPos.z -= 0.1f;
-		break;
-	case 'i':
-		modelPos.z += 0.1f;
-		break;
 	case 'h':
 		backfaceCulling = !backfaceCulling;
 		break;
@@ -602,6 +583,7 @@ void Keyboard(unsigned char key, int x, int y)
 		lightDistance -= 0.2f;
 		if (lightDistance < 1.0f) lightDistance = 1.0f;
 		lightPos.x = modelCenter.x + lightDistance * cos(lightOrbitAngle);
+		lightPos.y = modelCenter.y;
 		lightPos.z = modelCenter.z + lightDistance * sin(lightOrbitAngle);
 		std::cout << "조명 거리: " << lightDistance << std::endl;
 		break;
@@ -609,12 +591,9 @@ void Keyboard(unsigned char key, int x, int y)
 		lightDistance += 0.2f;
 		if (lightDistance > 10.0f) lightDistance = 10.0f;
 		lightPos.x = modelCenter.x + lightDistance * cos(lightOrbitAngle);
+		lightPos.y = modelCenter.y;
 		lightPos.z = modelCenter.z + lightDistance * sin(lightOrbitAngle);
 		std::cout << "조명 거리: " << lightDistance << std::endl;
-		break;
-	case 's':
-		targetModelPos = glm::vec3(0.0f, 0.0f, 0.0f);
-		stopFlag = !stopFlag;
 		break;
 	case 'q':
 		exit(0);

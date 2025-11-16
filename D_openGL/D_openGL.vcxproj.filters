@@ -156,9 +156,6 @@
     <ClCompile Include="S21.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
-    <ClCompile Include="SukJecpp.cpp">
-      <Filter>소스 파일\Shader_Practice</Filter>
-    </ClCompile>
     <ClCompile Include="Prac.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -170,6 +167,9 @@
     </ClCompile>
     <ClCompile Include="Input.cpp">
       <Filter>소스 파일\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="S26.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
