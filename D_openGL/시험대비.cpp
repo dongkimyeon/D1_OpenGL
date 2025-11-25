@@ -34,6 +34,7 @@ GLuint cubeVAO, cubeVBO, cubeEBO;         // 중앙 큐브
 GLuint planeVAO[4], planeVBO[4], planeEBO[4];  // 좌우상하 면 4개
 GLuint sphere1VAO, sphere1VBO, sphere1EBO;     // 큐브 주위 공전하는 공
 GLuint sphere2VAO, sphere2VBO, sphere2EBO;     // 공을 공전하는 작은 공
+GLuint sphere3VAO, sphere3VBO, sphere3EBO;
 GLuint axisVAO, axisVBO;
 GLuint floorVAO, floorVBO, floorEBO;
 GLuint orbitVAO, orbitVBO;  // 궤도용 VAO/VBO 추가
@@ -54,7 +55,7 @@ ExtendedModel centerCube;       // 중앙 큐브
 ExtendedModel planes[4];         // 좌우상하 면 4개
 ExtendedModel sphere1;           // 큐브 주위 공전하는 공
 ExtendedModel sphere2;           // 공을 공전하는 작은 공
-
+ExtendedModel sphere3;
 float cameraAngle = glm::atan(1.0f); // 초기 각도 (45도 라디안)
 float targetCameraAngle = glm::atan(1.0f); // 타겟 카메라 각도
 
@@ -107,7 +108,7 @@ int main(int argc, char** argv) {
 	// 공 모델 로드
 	read_obj_file("sphere.obj", &sphere1.baseModel);  // 큐브 주위 공전하는 공
 	read_obj_file("sphere.obj", &sphere2.baseModel);  // 공을 공전하는 작은 공
-
+	read_obj_file("sphere.obj", &sphere3.baseModel);
 	InitBuffers();
 
 	// 버퍼 업데이트
@@ -118,6 +119,7 @@ int main(int argc, char** argv) {
 	UpdateModelBuffers(&planes[3], planeVAO[3], planeVBO[3], planeEBO[3], glm::vec3(1.0f, 0.0f, 1.0f));  // 마젠타 (오른쪽)
 	UpdateModelBuffers(&sphere1, sphere1VAO, sphere1VBO, sphere1EBO, glm::vec3(0.0f, 1.0f, 1.0f));  // 시안색 (큐브 주위 공)
 	UpdateModelBuffers(&sphere2, sphere2VAO, sphere2VBO, sphere2EBO, glm::vec3(1.0f, 1.0f, 1.0f));  // 흰색 (작은 공)
+	UpdateModelBuffers(&sphere3, sphere3VAO, sphere3VBO, sphere3EBO, glm::vec3(1.0f, 0.0f, 0.0f));  // 흰색 (작은 공)
 
 	glutDisplayFunc(DrawScene);
 	glutReshapeFunc(Reshape);
@@ -254,6 +256,20 @@ void InitBuffers() {
 	glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
 	glGenBuffers(1, &sphere2EBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere2EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	glGenVertexArrays(1, &sphere3VAO);
+	glBindVertexArray(sphere3VAO);
+	glGenBuffers(1, &sphere3VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, sphere3VBO);
+	glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+	glGenBuffers(1, &sphere3EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphere3EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
 	glEnableVertexAttribArray(0);
@@ -487,10 +503,23 @@ void DrawScene() {
 	}
 
 	// ========== 중앙 큐브 그리기 ==========
-	glm::mat4 cubeModelMat = worldMat * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(cubeModelMat));
-	glBindVertexArray(cubeVAO);
-	glDrawElements(GL_TRIANGLES, centerCube.indexCount, GL_UNSIGNED_INT, 0);
+	for (int i = 0; i < 6; ++i) {
+		// 각 면의 modelMat 계산: 전체 회전 + 면 개별 회전
+		glm::mat4 localModelMat = glm::mat4(1.0f);
+		if (i == 2) //면의 z축으로 회전
+		{
+			localModelMat = localModelMat * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.5f, 0.0f));
+			localModelMat = localModelMat * glm::rotate(glm::mat4(1.0f), glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			localModelMat = localModelMat * glm::translate(glm::mat4(1.0f), -glm::vec3(0.0f, 0.5f, 0.0f));
+		}
+		
+
+		// Uniform 업데이트
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(localModelMat));
+		int startIdx = i * 6;
+		glBindVertexArray(cubeVAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
+	}
 
 	// ========== 좌우상하 면 4개 그리기 ==========
 	// 위쪽 면 (Y축 위)
@@ -553,8 +582,14 @@ void DrawScene() {
 	glBindVertexArray(sphere2VAO);
 	glDrawElements(GL_TRIANGLES, sphere2.indexCount, GL_UNSIGNED_INT, 0);
 
-	glBindVertexArray(0);
+	glm::mat4 sphere3Mat = glm::mat4(1.0f);
+	sphere3Mat = glm::translate(sphere3Mat, glm::vec3(3.0f, 3.0f, 0.0f));
+	sphere3Mat = glm::scale(sphere3Mat, glm::vec3(3.0f));
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(sphere3Mat));
+	glBindVertexArray(sphere3VAO);
+	glDrawElements(GL_TRIANGLES, sphere3.indexCount, GL_UNSIGNED_INT, 0);
 
+	glBindVertexArray(0);
 	//---------------------------------------------------------------------------
 	// XYZ 축 그리기
 	glm::mat4 AxisMat = glm::mat4(1.0f);
