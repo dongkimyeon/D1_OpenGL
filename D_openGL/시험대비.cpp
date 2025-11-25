@@ -42,6 +42,11 @@ GLuint orbitVAO, orbitVBO;  // 궤도용 VAO/VBO 추가
 bool allAnimationsPaused = false; // 모든 애니메이션 일시정지 플래그
 bool showOrbits = true;  // 궤도 표시 여부
 
+// 좌우 면 위치 교환 애니메이션 관련 변수
+bool planesSwapAnim = false;  // 좌우 면 교환 애니메이션 활성화 여부
+float planeSwapProgress = 0.0f;  // 교환 진행도 (0.0 ~ 1.0)
+bool planesSwapped = false;  // 현재 좌우 면이 교환된 상태인지
+
 struct ExtendedModel {
 	Model baseModel;
 	glm::vec3 center;
@@ -521,7 +526,11 @@ void DrawScene() {
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(startIdx * sizeof(GLuint)));
 	}
 
-	// ========== 좌우상하 면 4개 그리기 ==========
+	// ========== 좌우상하 면 4개 그리기 (좌우 교환 애니메이션 포함) ==========
+	// 좌우 면 위치 계산 (애니메이션 진행도에 따라 보간)
+	float leftX = glm::mix(-2.0f, 2.0f, planeSwapProgress);  // 왼쪽 면의 X 위치
+	float rightX = glm::mix(2.0f, -2.0f, planeSwapProgress);  // 오른쪽 면의 X 위치
+
 	// 위쪽 면 (Y축 위)
 	glm::mat4 topPlane = worldMat * 
 		glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 2.0f, 0.0f)) * 
@@ -538,17 +547,17 @@ void DrawScene() {
 	glBindVertexArray(planeVAO[1]);
 	glDrawElements(GL_TRIANGLES, planes[1].indexCount, GL_UNSIGNED_INT, 0);
 
-	// 왼쪽 면 (X축 음)
+	// 왼쪽 면 (X축 음, 애니메이션 적용)
 	glm::mat4 leftPlane = worldMat * 
-		glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f)) * 
+		glm::translate(glm::mat4(1.0f), glm::vec3(leftX, 0.0f, 0.0f)) * 
 		glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 2.0f, 2.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(leftPlane));
 	glBindVertexArray(planeVAO[2]);
 	glDrawElements(GL_TRIANGLES, planes[2].indexCount, GL_UNSIGNED_INT, 0);
 
-	// 오른쪽 면 (X축 양)
+	// 오른쪽 면 (X축 양, 애니메이션 적용)
 	glm::mat4 rightPlane = worldMat * 
-		glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)) * 
+		glm::translate(glm::mat4(1.0f), glm::vec3(rightX, 0.0f, 0.0f)) * 
 		glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 2.0f, 2.0f));
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(rightPlane));
 	glBindVertexArray(planeVAO[3]);
@@ -654,6 +663,10 @@ void Keyboard(unsigned char key, int x, int y) {
 	case 'X':
 		cameraPos.x -= 0.5f;  // x축 음 방향 이동
 		break;
+	case 't':  // 좌우 면 위치 교환 애니메이션 토글
+	case 'T':
+		planesSwapAnim = !planesSwapAnim;
+		break;
 	case 'm':  // 궤도 표시 토글
 		showOrbits = !showOrbits;
 		break;
@@ -671,6 +684,9 @@ void Keyboard(unsigned char key, int x, int y) {
 		cameraPos = initialCameraPos;
 		sphere1OrbitAngle = 0.0f;
 		sphere2OrbitAngle = 0.0f;
+		planesSwapAnim = false;
+		planeSwapProgress = 0.0f;
+		planesSwapped = false;
 		break;
 	case 'q': // 종료
 		exit(0);
@@ -698,6 +714,26 @@ void Timer(int value) {
 		// 공 공전 애니메이션
 		sphere1OrbitAngle += 1.0f * delta;  // 큐브 주위 공전 (초당 약 57도)
 		sphere2OrbitAngle += 2.0f * delta;  // 공 주위 공전 (더 빠르게, 초당 약 114도)
+
+		// 좌우 면 교환 애니메이션
+		if (planesSwapAnim) {
+			// 교환되지 않은 상태 -> 교환된 상태로 (0.0 -> 1.0)
+			if (!planesSwapped && planeSwapProgress < 1.0f) {
+				planeSwapProgress += 2.0f * delta;  // 0.5초에 완료
+				if (planeSwapProgress >= 1.0f) {
+					planeSwapProgress = 1.0f;
+					planesSwapped = true;
+				}
+			}
+			// 교환된 상태 -> 원래 상태로 (1.0 -> 0.0)
+			else if (planesSwapped && planeSwapProgress > 0.0f) {
+				planeSwapProgress -= 2.0f * delta;  // 0.5초에 완료
+				if (planeSwapProgress <= 0.0f) {
+					planeSwapProgress = 0.0f;
+					planesSwapped = false;
+				}
+			}
+		}
 	}
 
 	glutPostRedisplay();
