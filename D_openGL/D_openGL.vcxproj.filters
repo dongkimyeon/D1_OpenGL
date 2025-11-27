@@ -177,6 +177,9 @@
     <ClCompile Include="시험대비.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="S28.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
