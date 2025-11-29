@@ -38,7 +38,7 @@
 #include "imgui_local/imgui_impl_glut.h"
 #include "imgui_local/imgui_impl_opengl3.h"
 
-//#include "image_loader/stb_image.h"
+#include "image_loader/stb_image.h"
 #include "image_loader/SOIL.h"
 
 

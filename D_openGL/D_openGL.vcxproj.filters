@@ -180,6 +180,12 @@
     <ClCompile Include="S28.cpp">
       <Filter>소스 파일\Shader_Practice</Filter>
     </ClCompile>
+    <ClCompile Include="S29.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
+    <ClCompile Include="S30.cpp">
+      <Filter>소스 파일\Shader_Practice</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommonInclude.h">
@@ -245,6 +251,12 @@
       <Filter>소스 파일\Shader</Filter>
     </None>
     <None Include="lightVertex.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="SkyBoxVertex.glsl">
+      <Filter>소스 파일\Shader</Filter>
+    </None>
+    <None Include="SkyBoxFrag.glsl">
       <Filter>소스 파일\Shader</Filter>
     </None>
   </ItemGroup>

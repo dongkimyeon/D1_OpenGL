@@ -1,6 +1,8 @@
 #version 330 core
+
 in vec3 FragPos;
 in vec3 Normal;
+in vec2 TexCoord;  
 
 out vec4 FragColor;
 
@@ -8,6 +10,8 @@ uniform vec3 lightPos; //--- 조명의 위치
 uniform vec3 lightColor; //--- 조명의 색
 uniform vec3 objectColor; //--- 객체의 색
 uniform vec3 viewPos; //--- 관찰자의 위치
+uniform sampler2D texture1;  // 추가: 텍스처 샘플러
+
 
 void main()
 {
@@ -23,6 +27,9 @@ void main()
 	float specularLight = max(dot(viewDir, reflectDir), 0.0); //--- V와 R의 내적값으로 강도 조절: 음수 방지
 	specularLight = pow(specularLight, shininess); //--- shininess 승을 해주어 하이라이트를 만들어준다.
 	vec3 specular = specularLight * lightColor; //--- 거울 반사 조명값: 거울반사값 * 조명색상값
-	vec3 result = (ambient + diffuse + specular) * objectColor; //--- 최종 조명 설정된 픽셀 색상: (주변+산란반사+거울반사조명)*객체 색상
-	FragColor = vec4(result, 1.0); // --- 픽셀 색을 출력
+
+
+	vec3 texColor = texture(texture1, TexCoord).rgb;  // 추가: 텍스처 색상 샘플링
+    vec3 result = (ambient + diffuse + specular) * texColor;  // 수정: objectColor 대신 texColor 사용
+    FragColor = vec4(result, 1.0);
 }
